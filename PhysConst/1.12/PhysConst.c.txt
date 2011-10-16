@@ -1,0 +1,1502 @@
+#define appCreator 'NicK'
+#define appPrefID 1
+#define appPrefVersion 1
+#define MainForm		1000
+#define AboutForm 1100
+#define SIForm 1200
+#define LicenseForm	1150
+	#define CopyMenu 1900
+	#define OptionsMenuAbout 2000
+	#define ConstMenu 1250
+	#define SIMenu 1050
+	#define QuantityField 2100
+	#define NameSIField 2200
+	#define SymbolSIField 2300
+	#define SymbolDerField 2400
+	#define ConstantField 3000
+	#define ConstantField2 3001
+	#define UnitsField 3010
+	#define ConstValueField 3100
+	#define ConstantList 3005
+	#define ConstantPopup 3006
+	#define UnitsList 3015
+	#define UnitsPopup 3016
+	#define ResetMenu 4000
+	#define ResetMenu2 4010
+	#define SIPopup 2006
+	#define DerPopup 2016
+	#define SIList 2005
+	#define DerList 2015
+	#define CopyBtn 2500
+	#define SymbolDerInfo 2600 
+	#define CloseAboutMenuBtn 1110
+	#define LicenseBtn 1112
+	#define CloseLicenseBtn 1160
+	#define LicenseField 1170
+	#define SIBtn 1251
+	#define ConstBtn 1051
+	#define listCountM 42
+	#define LCount2 2
+	#define LCount3 3
+	#define LCount4 4 
+	#define LCount6 6
+	#define LCount7 7
+	#define LCount17 17
+	#define LCountC 61
+	#define LCount46 46
+	
+	
+
+
+	// *** PUT UI-DEFINITIONS HERE *** //
+	
+	// Prototypes
+	int d,g, FormCheck, r, c;
+	static char StringCopy[40];
+	
+	static void Constants(int i);
+	static void BlankUnits();
+	static Boolean	appHandleEvent (EventPtr event);
+	static void	mainFormInit (FormPtr form);
+	static void	AboutFormInit (FormPtr form);
+	static void	LicenseFormInit (FormPtr form);
+	static void	SIFormInit (FormPtr form);
+	static Boolean	mainFormEventHandler (EventPtr event);
+	static Boolean	AboutFormEventHandler (EventPtr event);
+	static Boolean	LicenseFormEventHandler (EventPtr event);
+	static Boolean	SIFormEventHandler (EventPtr event);
+	static Boolean	doMenu(FormPtr frmP, UInt16 command);
+	static Boolean	doMenuSI(FormPtr frmP, UInt16 command);
+	void	*getObjectPtr (FormPtr frmP, Int16 resourceNo);
+	static void getFieldText (UInt32 fIndex, char *StrToGet);
+	static void setFieldText (UInt32 fIndex, char *StrToShow);
+	static void	nullField (UInt32 fIndex);
+	void copyFieldsConst();
+	void copyFieldsSI();
+
+	//list handling prototypes
+	void LstDrawList (ListType *listP) SYS_TRAP(sysTrapLstDrawList);
+	void LstSetDrawFunction (ListType *listP, ListDrawDataFuncPtr func) 
+		SYS_TRAP(sysTrapLstSetDrawFunction);
+	void WinDrawTruncChars (Char *c, int i, int x, int y, int w)
+		SYS_TRAP(sysTrapWinDrawTruncChars);
+	
+	typedef struct { 
+    	char Quantity[40];
+	char NameSI[40];
+	char SymbolSI[40];
+	char SymbolDer[40];
+	char Constant[40];
+	char Constant2[40];
+	char Units[40];
+	char ConstValue[40];
+	char SymbolDer2[40];
+	int WhichForm;
+	int WC;
+	} PhysConstPreferenceType; 
+	
+	PhysConstPreferenceType Prefs; 
+
+
+	
+
+
+	static char	*Blanklist[1]= {" "};
+	static char blank[5] ="   ";
+	static char	*listStringM[listCountM]= {"Astronomical Constants","Atomic Mass","Atomic Unit", "Avogadro Constant","Bohr Magneton", 
+								"Bohr Radius","Boltzmann Constant","Charact. Impedance of vacuum",
+								"Electric Constant", "Electron Charge to Mass ratio","Electron cyclotron frequency",
+								"Electron g factor","Electron gyromagnetic ratio", "Electron gyromag. ratio/2Pi",
+								"Electron Magnetic Moment","Electron Mass","Electron radius - classical","Electron Volt",
+								"Elementary Charge","Exposure (Langmuir)","Faraday Constant","Fine Structure Constant","Golden mean", 
+								"Inverse Fine Structure Const.","Hartree Energy", 
+								"Joule Conversion","Kelvin Conversion","Kilogram Conversion","Silicon Lattice Constant",
+								"Magnetic Constant","Magnetic Flux Quantum","Newton Gravit. Constant", 
+								"Newton Gravit. Const/(hbar*c)", "Planck Constant", "Planck Constant/2Pi   (hbar)",
+								"Proton cyclotron frequency",
+								"Rydberg Constant", "Speed of light in vacuum", "Standard gravity acceleration",
+								"Standard atmosphere", "Stefan-Boltzman Constant", "Universal Gas Constant R"};
+
+	static char	*listAstroUnits[LCountC]= {"Astronomical Unit AU", "cosmic background temperature","light year","Parsec","Hubble expansion rate", 
+								"Mass Sun","Radius Sun","g Sun", "Luminosity Sun", "Solar Temperature",  
+								"Mass Mercury","Radius Mercury","g Mercury","Period Mercury", "ecc. Mercury",
+								"Mass Venus","Radius Venus","g Venus","Period Venus", "ecc. Venus", 
+								"Mass Earth","Radius Earth","g Earth","Period Earth", "ecc. Earth",
+								"Mass Mars","Radius Mars","g Mars","Period Mars", "ecc. Mars",
+								"Mass Jupiter","Radius Jupiter","g Jupiter","Period Jupiter", "ecc. Jupiter",   
+								"Mass Saturn","Radius Saturn","g Saturn","Period Saturn", "ecc. Saturn",
+								"Mass Uranus","Radius Uranus","g Uranus","Period Uranus", "ecc. Uranus",
+								"Mass Neptune","Radius Neptune","g Neptune","Period Neptune", "ecc. Neptune",
+								"Mass Pluto","Radius Pluto","g Pluto","Period Pluto", "ecc. Pluto",						
+								"Mass Moon","Radius Moon","g Moon","Period Moon", "ecc. Moon","Earth-Moon dist."};						
+								   	
+static char *listAstroValues1[LCountC]= {"1.496E11","2.728","9.463E15","3.0856775807E16","81",
+							"1.989E30", "6.955E8","274", "3.9E26","5777",
+							"3.3022E23","2.4397E6","3.7","0.241", "0.20563069",  
+							"4.8685E24","6.0518E6","8.87","0.615","0.0068",
+							"5.9737E24","6.37814E6","9.766","1.0000174", "0.01671022",
+							"6.4185E23","3.397E6","3.693","1.8807","0.0934",
+							"1.8987E27","7.1492E7","20.87","11.8565","0.04839",
+							"5.6851E26","6.0268E7","7.207","29.4","0.0541506",
+							"8.6849E25","2.5559E7","8.43","84.02","0.047168",
+							"1.0244E26","2.4764E7","10.71","164.79","0.00859",
+							"1.3E22","1.151E6","0.81","247.92","0.2488",
+							"7.3483E22","1.734E6","1.622","0.075","0.05490","3.84401E8"};
+static char	*listAstroUnits2[LCountC]= {"m", "K","m","m","km*s^-1/Mpc", "kg","m","m/s²","J/s","K","kg","m","m/s²","yr"," ",   	
+							"kg","m","m/s²","yr"," ",
+"kg","m","m/s²","yr"," ",  "kg","m","m/s²","yr"," ",  "kg","m","m/s²","yr"," ",    
+"kg","m","m/s²","yr"," ",    "kg","m","m/s²","yr"," ",    "kg","m","m/s²","yr"," ",   
+"kg","m","m/s²","yr"," ",     "kg","m","m/s²","yr"," ","m"};
+	static char	*listPlanckUnits[LCount2]= {"J*s", "eV*s"};
+	static char	*listPlanckUnits2[LCount2]= {"J*s", "eV*s"};
+	static char *listPlanckValues1[LCount2]= {"6.62606876E-34", "4.13566727E-15"};
+	static char *listPlanckValues2[LCount2]= {"1.054571596E-34", "6.58211889E-16"};
+	static char	*listBoltzmannUnits[LCount4]= {"J/K", "eV/K", "Hz/K", "1/(m*K)"};
+	static char	*listBoltzmannUnits2[LCount4]= {"J/K", "eV/K", "Hz/K  (kB/h)", "1/(m*K)  (kB/hc)"};
+	static char *listBoltzmannValues1[LCount4]= {"1.3806503E-23", "8.617342E-5", "2.0836644E10", "6.950356E4"};
+	static char	*listAtomicMassUnits[LCount6]= {"kg", "J", "eV", "Eh", 
+								"Hz", "K"};
+	static char	*listAtomicMassUnits2[LCount6]= {"u-kg (1u)", "u-J  (1u)c²", "u-eV  (1u)c²", "u-Eh  (1u)c²", 
+								"u-Hz  (1u)c²/h", "u-K  (1u)c²/kB"};
+
+	static char *listAtomicMassValues1[LCount6]= {"1.6605E-27", "1.4924E-10", "9.31494E8", "3.4231777E7",
+								"2.2523E23", "1.08096E13"};
+	
+	static char	*listAtomicUnits[LCount17]= {"C", "C*m³", "A", "C m", 
+							"C m²", "V /m", "J", "eV", "N", "m", "1/(J*T)", "T", "kg", "kg*m/s", "1/(F*m)", "s", "m*s^-1"};
+	static char	*listAtomicUnits2[LCount17]= {"Charge e", "Charge density e/a0^3", "Current e*Eh/hbar", "Electric Dipole Moment e*a0",
+								"Electric Quad. Moment e*a0²", "Electric Field Eh/e*a0", "Energy (Rydberg) Eh","Energy (Rydberg) Eh",
+								 "Force Eh/a0", "Bohr Radius a0", "Magnetic Dipole Moment hbar*e/me", "Mag. Flux Density hbar/e*a0²", 
+								"Mass me","Momentum hbar/a0", "Permittivity e²/a0*Eh", "Time hbar/Eh", "Velocity a0*Eh"} ;
+	
+	static char *listAtomicValues1[LCount17]= {"1.602176462E-19", "1.081202285E12", "6.62361753E-3", "8.47835267E-30",
+								"4.48655100E-40", "5.14220624E11", "4.35974381E-18", "27.2113834", "8.23872181E-8",
+								"0.5291772083E-10","1.854801799E-23", "2.350517349E5", "9.10938188E-31", "1.99285151E-24", "1.112650056e-10",
+								"2.4188843265E-17", "2.1876912529E6"};
+	
+	static char	*listBohrMagUnits[LCount4]= {"eV/T", "Hz/T","1/(m*T)", "K/T"};
+	static char	*listBohrMagUnits2[LCount4]={"µB", "µB/h", "µB/(h*c)", "µB/kB"};
+	static char *listBohrMagValues1[LCount4]={"5.788381749E-5", "13.99624624E9","46.6864521", "0.6717131"};
+	static char	*listElMagMomUnits[LCount3]= {"J/T", " "," "};
+	static char	*listElMagMomUnits2[LCount3]={"µe", "to Bohr mag. ratio (µe/µB)", "to nuclear mag. ratio (µB/µN)"};
+	static char *listElMagMomValues1[LCount3]={"-928.476 362E-26", "-1.0011596521869","-1838.2819660"};
+	static char	*listElMassUnits[LCount4]= {"kg", "J"," MeV", "u"};
+	static char	*listElMassUnits2[LCount4]={"me", "J energy equiv. (me*c²)", "MeV energy equiv. (me*c²)", "me in u unit"};
+	static char *listElMassValues1[LCount4]={"9.10938188E-31", "8.18710414E-14","0.510998902", "5.485799110E-4"};
+
+	static char	*listElVoltUnits[LCount7]= {"J", "u","Eh", "Hz", "1/m", "K", "kg"};
+	static char	*listElVoltUnits2[LCount7]={"eV", "eV-u  (1eV)/c²", "eV-Eh", "eV-Hz  (1eV)/h", "eV-m^-1  (1eV)/(h*c)",
+								"eV-K  (1eV)/kB", "eV-kg  (1eV)/c²"};
+	static char *listElVoltValues1[LCount7]={"1.602176462E-19", "1.073544206E-9","3.67493260E-2", "2.417989491E14",
+								"8.06554477E5", "1.1604506E4", "1.782661731E-36"};
+
+	static char	*listHartreeUnits[LCount7]= {"J", "eV","u", "Hz", "1/m", "K", "kg"};
+	static char	*listHartreeUnits2[LCount7]={"Eh", "Eh  (eV)", "Eh-u  (Eh/c²)","Eh-Hz  (Eh/h)","Eh-m^-1  (Eh/(h*c))",
+								"Eh-K  (Eh/kB)",  "Eh-kg  (Eh/c²)"};
+	static char *listHartreeValues1[LCount7]={"4.35974381E-18", "27.2113834", "2.921262304E-8", "6.579683920735E15",
+								"2.194746313710E7","3.1577465E5", "4.85086919E-35"};
+	static char	*listJouleUnits[LCount7]= {"eV","Eh","u","Hz", "1/m", "K", "kg"};
+	static char	*listJouleUnits2[LCount7]={"J-eV", "J-Eh" ,"J-u  (1J/c²}","J-Hz  (1J/h)", "J-m^-1  (1J/(h*c))",
+								"J-K  (1J/kB)","J-Kg  (1J/C²)" };
+	static char *listJouleValues1[LCount7]={"6.24150974E18","2.29371276E17","6.70053662E9", "1.509190E33",
+								"5.03411762E24", "7.242964E22","1.112650056E-17"};
+	static char	*listKelvinUnits[LCount7]= {"J", "eV", "Eh","Hz","1/m","u","kg"};
+	static char	*listKelvinUnits2[LCount7]={"K-J  (1K)*kB","K-eV  (1K)*kB","K-Eh  (1K)*kB","K-Hz  (1K)*kB/h",
+								"K-m^-1  (1K*kB/(h*c))","K-u  (1K*kB/c²)","K-kg  (1K*kB/c²)"};
+	static char *listKelvinValues1[LCount7]={"1.3806503E-23","8.617342E-5","3.1668153E-6","2.0836644E10",
+								"69.50356", "9.251098E-14","1.5361807E-40" };
+	static char	*listkgUnits[LCount7]= {"u","eV","Eh","Hz","1/m","J","K"};
+	static char	*listkgUnits2[LCount7]={"kg-u","kg-eV  (1kg*c²)","kg-Eh  (1kg*c²)","kg-Hz  (1kg*c²/h)",
+							"kg-m^-1  (1kg*c/h)","kg-J  (1kg*c²)","kg-K  (1kg*c²)/kB"};
+	static char *listkgValues1[LCount7]={"6.02214199E26","5.60958921E35","2.06148622E34","1.35639277E50",
+							"4.52443929E41","8.987551787E16","6.509651E39"};
+	static char	*listMagFluxUnits[LCount2]= {"Wb", "G cm²"};
+	static char	*listMagFluxUnits2[LCount2]= {"Phi_0", "Phi_0"};
+	static char *listMagFluxValues1[LCount7]={"2.067833636E-15", "2.067833636E-7"};
+
+	static char	*listRydbergUnits[LCount4]= {"1/m","Hz","eV","J"};
+	static char	*listRydbergUnits2[LCount4]={"R inf", "R inf * c","R inf * c*h","R inf * c*h"};
+	static char *listRydbergValues1[LCount4]={"1.0973731568549E7", "3.289841960368E15", "13.60569172","2.17987190E-18"};
+	
+	static char	*listRUnits[LCount4]= {"J/(mol*K)","l*atm/(mol*K)","cal/(mol*K)","l*torr/(mol*K)"};
+
+	static char *listRValues1[LCount4]={"8.3144", "8.2057E-2", "1.9872","62.363"};
+
+
+	static char	*listSIQuantity[LCount7]= {"Amount of substance","Electric Current","Length","Luminous Intensity",
+							"Mass","Thermodyn. temperature","Time"};
+	static char	*listSIName[LCount7]={"mole","ampere","meter", "candela","kilogram","kelvin","second"};
+	static char *listSISymbol[LCount7]={"mol","A","m","cd","kg","K","s"};
+
+	static char	*listDerQuantity[LCount46]= {"Activity (of a radionuclide)","Adsorbed dose rate","Adsorbed dose, specific energy",
+								"Angular acceleration","Angular velocity","Capacitance","Catalytic activity","Catalytic concentration",
+								"Celsius temperature","Current density", "Dose equivalent","Dynamic viscosity",
+								"Electric charge","Electric charge density", "Electric conductance","Electric field strength",
+								"Electric flux density","Electric potential", "Electric resistance","Energy","Energy density",
+								"Exposure	(x-ray)","Force","Frequency","Heat capacity, entropy","Heat flux density, irradiance",
+								"Illuminance","Inductance","Luminance","Luminous flux","Magnetic field strength","Magnetic flux",
+								"Magnetic flux density","Molar energy","Molar entropy","Moment of force","Permeability","Permittivity",
+								"Pressure, stress", "Power","Radiance","Radiant intensity","Specific energy","Surface tension",
+								"Thermal conductivity", "Wave number"};
+
+	static char	*listDerName[LCount46]={"becquerel","gray per second","gray","radian per sec²","radian per second","farad","katal",
+							"katal/meter³","degree Celsius","ampere per meter²","sievert","pascal second","coulomb",
+							"coulomb per meter³","siemens","volt per meter","coulomb per meter²","volt","ohm","joule",
+							"joule per meter³","coulomb per kg","newton","hertz","joule per kelvin","watt per meter²","lux",
+							"henry","candela per meter²","lumen","ampere per meter","weber","tesla","joule per mole",
+							"joule per mole kelvin", "newton meter","henry per meter","farad per meter","pascal","watt",
+							"watt per meter² steradian","watt per steradian","joule per kg","newton per meter","watt per meter kelvin",
+							"reciprocal meter"};
+
+	static char *listDerSymbol[LCount46]={"Bq","Gy/s","Gy","rad/s²","rad/s","F","kat",
+							"kat/m³","C","","Sv","Pa*s","C","C/m³","S","V/m","C/m²","V","Omega","J","J/m³","C/kg","N","Hz","J/K",
+							"W/m²","lx","H","","lm","A/m","Wb","T", "J/mol","J/(mol*K)","N*m","H/m","F/m","Pa","W","W/(sr*m²)","W/sr",
+							"J/kg","N/m","W/(m*K)",""};
+
+	static char *listDerUnits[LCount46]={"1/s","m²/s³","J/kg  (m²/s²)","1/s²","1/s","C/V  (A*s²)²/(kg*m²)","mol/s",
+							"mol/(s*m³)","K","A/m²","J/kg  (m²/s²)","kg/(m*s)","A*s","s*A/m³","A/V  (A²*s³/(kg*m²))","m*Kg/(A*s³)",
+							"s*A/m²","W/A  (kg*m²/(A*s³))","V/A  (kg*m²/(A²*s³))","N*m  (kg*m²/s²)","kg/(m*s²)","s*A/kg",
+							"kg*m/s²","1/s","(kg*m²)/(K*s²)","kg/s³","lm/m²  (cd/m²)","Wb/A   kg*m²/(s²*A²)","cd/m²",
+							"cd*sr  (cd*m²/m²=cd)","A/m","V*s   (kg*m²/(A*s²)","Wb/m²   (kg/(A*s²))", "kg*m²/(mol*s²)",
+							"kg*m²/(mol*K*s²)","kg*m²/s²","m*kg/(A²*s²)","(A*s²)²/(kg*m³)","N/m²  (kg/(m*s²))","J/s  (kg*m²/s³)", 
+							"kg/s³","kg*m²/s³","m²/s²","kg/s²","m*kg/(K*s³)","1/m"};
+
+	static char *listDerInfo[LCount46]={"","","","","","","","","","","","","","","","","","","","1meV=11.6K 1KJ=10.4meV 1kcal=43.4meV 1THz=4.13meV",
+							"","","","","","","","","","","","","","","","","","","","","","","","","",""};
+
+void	drawBlanklist	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (Blanklist[i], StrLen(Blanklist[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupBlanklist(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, 1);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawBlanklist);
+	}
+
+
+void	drawListM	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (listStringM[i], StrLen(listStringM[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListM(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, listCountM);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawListM);
+	}
+
+void	drawlistPlanckUnits	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (listPlanckUnits[i], StrLen(listPlanckUnits[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListPlanckUnits(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, LCount2);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawlistPlanckUnits);
+	}
+
+void	drawlistAstroUnits	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (listAstroUnits[i], StrLen(listAstroUnits[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListAstroUnits(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, LCountC);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawlistAstroUnits);
+	}
+
+void	drawListBoltzmannUnits	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (listBoltzmannUnits[i], StrLen(listBoltzmannUnits[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListBoltzmannUnits(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, LCount4);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawListBoltzmannUnits);
+
+	}
+
+
+void	drawListAtomicMassUnits	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (listAtomicMassUnits[i], StrLen(listAtomicMassUnits[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListAtomicMassUnits(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, LCount6);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawListAtomicMassUnits);
+	}
+
+void	drawListAtomicUnits	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (listAtomicUnits[i], StrLen(listAtomicUnits[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListAtomicUnits(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, LCount17);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawListAtomicUnits);
+	}
+
+void	drawListBohrMagUnits	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (listBohrMagUnits[i], StrLen(listBohrMagUnits[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListBohrMagUnits(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, LCount4);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawListBohrMagUnits);
+	}
+
+
+void	drawListElMagMomUnits	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (listElMagMomUnits[i], StrLen(listElMagMomUnits[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListElMagMomUnits(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, LCount3);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawListElMagMomUnits);
+	}
+
+
+void	drawListElMassUnits	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (listElMassUnits[i], StrLen(listElMassUnits[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListElMassUnits(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, LCount4);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawListElMassUnits);
+	}
+
+
+void	drawListHartreeUnits	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (listHartreeUnits[i], StrLen(listHartreeUnits[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListHartreeUnits(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, LCount7);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawListHartreeUnits);
+	}
+
+
+void	drawListElVoltUnits	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (listElVoltUnits[i], StrLen(listElVoltUnits[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListElVoltUnits(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, LCount7);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawListElVoltUnits);
+	}
+
+
+void	drawListJouleUnits	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (listJouleUnits[i], StrLen(listJouleUnits[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListJouleUnits(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, LCount7);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawListJouleUnits);
+	}
+
+
+void	drawListKelvinUnits	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (listKelvinUnits[i], StrLen(listKelvinUnits[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListKelvinUnits(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, LCount7);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawListKelvinUnits);
+	}
+
+
+void	drawListkgUnits	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (listkgUnits[i], StrLen(listkgUnits[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListkgUnits(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, LCount7);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawListkgUnits);
+	}
+
+void	drawListMagFluxUnits	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (listMagFluxUnits[i], StrLen(listMagFluxUnits[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListMagFluxUnits(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, LCount2);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawListMagFluxUnits);
+	}
+
+
+
+void	drawListRydbergUnits	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (listRydbergUnits[i], StrLen(listRydbergUnits[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListRydbergUnits(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, LCount4);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawListRydbergUnits);
+	}
+
+void	drawListRUnits	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (listRUnits[i], StrLen(listRUnits[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListRUnits(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, LCount4);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawListRUnits);
+	}
+
+
+void	drawListSIQuantity	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (listSIQuantity[i], StrLen(listSIQuantity[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListSIQuantity (int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, LCount7);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawListSIQuantity);
+	}
+
+void	drawListDerQuantity	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (listDerQuantity[i], StrLen(listDerQuantity[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListDerQuantity (int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, LCount46);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawListDerQuantity);
+	}
+
+void	drawListDerInfo	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (listDerInfo[i], StrLen(listDerInfo[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListDerInfo (int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, LCount46);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawListDerInfo);
+	}
+
+
+///////////////////////////////////////////////////////////////////////////////
+	
+	
+	/*
+	 * startApp and stopApp are here for future reference.  They clearly 
+	 * don't do anything for this program, but it's a good idea to do 
+	 * program clean-up and shutdown in these files.  One thing that 
+	 * typically goes here is database opening and closing.
+	 */
+
+	static void	startApp()	
+	{
+	UInt16 sizePrefs = sizeof( PhysConstPreferenceType );
+	Int16 rc;	
+	rc=PrefGetAppPreferences(appCreator, appPrefID,(void*)(&Prefs), &sizePrefs, true);
+
+	if (rc == noPreferenceFound) 
+	{
+	StrCopy(Prefs.Quantity, " ");
+	StrCopy(Prefs.NameSI, " ");
+	StrCopy(Prefs.SymbolSI, " ");
+	StrCopy(Prefs.SymbolDer, " ");
+	StrCopy(Prefs.Constant, " ");	
+	StrCopy(Prefs.Constant2, " ");
+	StrCopy(Prefs.Units, " ");
+	StrCopy(Prefs.ConstValue, " ");
+	StrCopy(Prefs.SymbolDer2, " ");	
+	Prefs.WhichForm=0;
+	Prefs.WC = 42;
+	}
+			return;}
+
+	static void	stopApp()	
+	{
+	
+		
+	if(FormCheck==1)
+	{	
+	copyFieldsSI();
+	}
+
+	if(FormCheck==0)
+	{
+	copyFieldsConst();
+	}
+	Prefs.WC = c;
+	Prefs.WhichForm = r;
+	PrefSetAppPreferences (appCreator, appPrefID,  appPrefVersion, &Prefs, sizeof (Prefs), true); 
+		return;}
+
+
+	/*
+	 * A Palm program starts at the PilotMain function -- you can use 
+	 * this example verbatim for most (maybe all) your Palm applications.  
+	 * Some other examples might separate the event loop into a separate 
+	 * function but we've combined the two, here.  This function does 
+	 * the following.
+	 *
+	 *	o  calls startApp, 
+	 *	o  initiates the first form, 
+	 *	o  handles the event loop, 
+	 *	o  cleans-up (when it gets the 'leaving now' event), and 
+	 *	o  leaves.
+	 */
+
+
+		UInt16
+	PilotMain(UInt16 cmd, void *cmdPBP, UInt16 launchFlags)
+	{
+		EventType	event;
+		Int16		error;
+		if (cmd == sysAppLaunchCmdNormalLaunch) 
+		{
+			startApp();
+
+			/*
+			 * FrmGotForm generates a frmLoadEvent that'll get 
+			 * handled as soon as we have an event handler that 
+			 * knows what to do with it.
+			 */
+			if(r==0)
+			{
+			FrmGotoForm(MainForm);
+			}
+			if(r==1)
+			{FrmGotoForm(SIForm);}
+
+
+				
+			/*
+			 * This loop gets events, handles the events, and 
+			 * checks to see if we've got a 'done' event.
+			 */
+
+			do 
+			{
+				/*
+				 * Wait for an event (we already generated the 
+				 * first one).
+				 */
+
+				EvtGetEvent(&event, evtWaitForever);
+
+				/*
+				 * Then, ask the system, the menu system, 
+				 * and our *OWN* event handlers (one for the 
+				 * application as a whole and one for the 
+				 * current form) to deal with the event.
+				 */
+
+				if (!SysHandleEvent (&event))
+				if (!MenuHandleEvent (0, &event, &error))
+				if (!appHandleEvent (&event))
+					FrmDispatchEvent (&event);
+
+			} while (event.eType != appStopEvent);
+
+			/*
+			 * When we're done, shut down
+			 */
+
+			stopApp();
+			FrmCloseAllForms();
+		}
+		return 0;
+	}
+
+	/*
+	 * This is the top-level event handler for the entire application.  
+	 * Here, we handle form load events and our menu events.
+	 */
+
+
+		static Boolean 
+	appHandleEvent (EventPtr event) 
+	{
+		FormPtr	frm;
+		Int16	formId;
+		Boolean	handled = false;
+		
+		if (event->eType == frmLoadEvent) 
+		{
+			/*
+			* Load the resource for the form
+			*/
+
+			formId	= event->data.frmLoad.formID;
+			frm	= FrmInitForm(formId);
+
+			FrmSetActiveForm(frm);
+
+			/*
+			* install a form-specific event handler
+			*/
+
+			if (formId == MainForm)
+				FrmSetEventHandler (frm, mainFormEventHandler);
+			if (formId == AboutForm)
+				FrmSetEventHandler (frm, AboutFormEventHandler);
+			if (formId == LicenseForm)
+				FrmSetEventHandler (frm, LicenseFormEventHandler);
+			if (formId == SIForm)
+				FrmSetEventHandler (frm, SIFormEventHandler);
+
+			// *** ADD NEW FORM HANDLING HERE *** //
+			
+
+
+			handled = true;
+		}       
+		return handled;
+	}
+
+
+	/*
+	 * This is the event handler for the main form.  It handles all of 
+	 * the user interactions with the user interface objects (e.g., 
+	 * buttons, lists, text fields, and such) on the main form.
+	 */
+
+
+		static Boolean
+	mainFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			mainFormInit(frmP);
+			handled = true;
+			break;  
+		case menuEvent:
+			handled=doMenu(frmP, event->data.menu.itemID);
+			break;
+
+		
+		// *** ADD EVENT HANDLING HERE *** //
+//BUTTONS
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	CopyBtn:
+			{
+				//Copy to Clipboard
+				getFieldText(ConstValueField, StringCopy);
+				ClipboardAddItem (clipboardText, StringCopy,StrLen(StringCopy));
+
+				handled = true;
+				break;
+			}
+			//other buttons...
+			case	SIBtn:
+			{	copyFieldsConst();
+
+				FrmGotoForm(SIForm);
+				FormCheck=1;
+				handled = true;
+				break;
+			}
+
+			}
+			break;
+
+//LISTS
+
+		case popSelectEvent:
+	{
+		int	i	= event->data.popSelect.selection;
+
+		switch (event->data.popSelect.controlID)
+		{
+		case ConstantPopup:
+						
+			setFieldText(ConstantField, listStringM[i]);
+			setFieldText(ConstValueField, " ");
+			setFieldText(UnitsField, " ");
+			setFieldText(ConstantField2, " ");
+			Prefs.WC=i;
+			Constants(Prefs.WC);
+			handled = true;
+			break;
+		
+	case UnitsPopup:
+			if(d==0)
+			{setFieldText(UnitsField, listAstroUnits2[i]);
+			setFieldText(ConstantField2, listAstroUnits[i]);
+			setFieldText(ConstValueField, listAstroValues1[i]);
+			}
+
+			if(d==1)
+			{setFieldText(UnitsField, listAtomicMassUnits[i]);
+			setFieldText(ConstantField2, listAtomicMassUnits2[i]);
+			setFieldText(ConstValueField, listAtomicMassValues1[i]);
+			}
+			if(d==2)
+			{setFieldText(UnitsField, listAtomicUnits[i]);
+			setFieldText(ConstantField2, listAtomicUnits2[i]);
+			setFieldText(ConstValueField, listAtomicValues1[i]);
+			}
+			if(d==4)
+			{setFieldText(UnitsField, listBohrMagUnits[i]);
+			setFieldText(ConstantField2, listBohrMagUnits2[i]);
+			setFieldText(ConstValueField, listBohrMagValues1[i]);
+			}
+
+			if(d==6)
+			{setFieldText(UnitsField, listBoltzmannUnits[i]);
+			setFieldText(ConstantField2, listBoltzmannUnits2[i]);
+			setFieldText(ConstValueField, listBoltzmannValues1[i]);
+			}
+			if(d==14)
+			{setFieldText(UnitsField, listElMagMomUnits[i]);
+			setFieldText(ConstantField2, listElMagMomUnits2[i]);
+			setFieldText(ConstValueField, listElMagMomValues1[i]);}
+			if(d==15)
+			{setFieldText(UnitsField, listElMassUnits[i]);
+			setFieldText(ConstantField2, listElMassUnits2[i]);
+			setFieldText(ConstValueField, listElMassValues1[i]);}
+			if(d==17)
+			{setFieldText(UnitsField, listElVoltUnits[i]);
+			setFieldText(ConstantField2, listElVoltUnits2[i]);
+			setFieldText(ConstValueField, listElVoltValues1[i]);}
+
+			if(d==24)
+			{setFieldText(UnitsField, listHartreeUnits[i]);
+			setFieldText(ConstantField2, listHartreeUnits2[i]);
+			setFieldText(ConstValueField, listHartreeValues1[i]);}
+			if(d==25)
+			{setFieldText(UnitsField, listJouleUnits[i]);
+			setFieldText(ConstantField2, listJouleUnits2[i]);
+			setFieldText(ConstValueField, listJouleValues1[i]);}
+			if(d==26)
+			{setFieldText(UnitsField, listKelvinUnits[i]);
+			setFieldText(ConstantField2, listKelvinUnits2[i]);
+			setFieldText(ConstValueField, listKelvinValues1[i]);}
+			if(d==27)
+			{setFieldText(UnitsField, listkgUnits[i]);
+			setFieldText(ConstantField2, listkgUnits2[i]);
+			setFieldText(ConstValueField, listkgValues1[i]);}
+			if(d==30)
+			{setFieldText(UnitsField, listMagFluxUnits[i]);
+			setFieldText(ConstantField2, listMagFluxUnits2[i]);
+			setFieldText(ConstValueField, listMagFluxValues1[i]);}			
+			if(d==33)
+			{setFieldText(UnitsField, listPlanckUnits[i]);
+			setFieldText(ConstantField2, listPlanckUnits2[i]);
+			setFieldText(ConstValueField, listPlanckValues1[i]);}
+			if(d==34)
+			{setFieldText(UnitsField, listPlanckUnits[i]);
+			setFieldText(ConstantField2, listPlanckUnits2[i]);
+			setFieldText(ConstValueField, listPlanckValues2[i]);}
+			if(d==36)
+			{setFieldText(UnitsField, listRydbergUnits[i]);
+			setFieldText(ConstantField2, listRydbergUnits2[i]);
+			setFieldText(ConstValueField, listRydbergValues1[i]);}
+			if(d==41)
+			{setFieldText(UnitsField, listRUnits[i]);
+			setFieldText(ConstValueField, listRValues1[i]);}
+
+			handled = true;
+			break;
+		}
+		}
+		}
+		return handled;
+	}
+
+
+static Boolean
+	AboutFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			AboutFormInit(frmP);
+			handled = true;
+			break;  
+		
+		
+		// *** ADD EVENT HANDLING HERE *** //
+//BUTTONS
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	CloseAboutMenuBtn:
+			{	if(g==0)
+				{FrmGotoForm(MainForm);}
+				if(g==1)
+				{FrmGotoForm(SIForm);}
+				handled = true;
+				break;
+			}
+			case	LicenseBtn:
+			{	FrmGotoForm(LicenseForm);
+				handled = true;
+				break;
+			}
+			//other buttons...
+			}
+			break;
+}
+return handled;
+}
+
+static Boolean
+	LicenseFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			LicenseFormInit(frmP);
+			handled = true;
+			break;  
+		
+		
+		// *** ADD EVENT HANDLING HERE *** //
+//BUTTONS
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	CloseLicenseBtn:
+			{	FrmGotoForm(AboutForm);
+				handled = true;
+				break;
+			}
+			//other buttons...
+			}
+			break;
+}
+return handled;
+}
+
+		
+static Boolean
+	SIFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			SIFormInit(frmP);
+			handled = true;
+			break;  
+		case menuEvent:
+			handled=doMenuSI(frmP, event->data.menu.itemID);
+			break;
+
+		
+		// *** ADD EVENT HANDLING HERE *** //
+//BUTTONS
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	ConstBtn:
+			{	copyFieldsSI();
+			FrmGotoForm(MainForm);
+			FormCheck = 0;
+
+				handled = true;
+				break;
+			}
+			//other buttons...
+			}
+			break;
+//LIST
+
+case popSelectEvent:
+	{
+		int	i	= event->data.popSelect.selection;
+
+		switch (event->data.popSelect.controlID)
+		{
+		case SIPopup:
+			{			
+			setFieldText(QuantityField, listSIQuantity[i]);
+			setFieldText(NameSIField, listSIName[i]);
+			setFieldText(SymbolSIField, listSISymbol[i]);
+			setFieldText(SymbolDerField, " ");
+
+	
+			handled = true;
+				break;
+			}
+		case DerPopup:
+			{			
+			setFieldText(QuantityField, listDerQuantity[i]);
+			setFieldText(NameSIField, listDerName[i]);
+			setFieldText(SymbolSIField, listDerSymbol[i]);
+			setFieldText(SymbolDerField, listDerUnits[i]);
+			setFieldText(SymbolDerInfo, listDerInfo[i]);
+				handled = true;
+				break;
+			}
+			
+		
+}
+}
+}
+return handled;
+}
+
+	
+
+	/*
+	 * This is the startup code for the form.  Here, we write our message 
+	 * to the screen.
+	 */
+
+		static void 
+	mainFormInit (FormPtr frmP)
+	{g=0;
+	r=0;
+	setupListM(ConstantList);
+	setFieldText(ConstantField, Prefs.Constant);
+	setFieldText(ConstantField2, Prefs.Constant2);
+	setFieldText(UnitsField, Prefs.Units);
+	setFieldText(ConstValueField, Prefs.ConstValue);
+	
+
+	Constants(Prefs.WC);
+	FormCheck=0;
+		
+		// *** ADD FORM INITIALIZATION HERE *** //
+		
+	}
+
+
+	static void 
+	AboutFormInit (FormPtr frmP)
+	{//setupListM(ConstantList);
+	
+	//setFieldText(ConstValueField, " ");
+		
+		// *** ADD FORM INITIALIZATION HERE *** //
+		
+	}
+
+static void 
+	LicenseFormInit (FormPtr frmP)
+	{
+MemHandle t=DmGetResource('tSTR', 5000);
+
+
+    static Char    *foo    = (static Char *) MemHandleLock(t);
+   // WinDrawChars (foo,StrLen(foo),20,18);
+setFieldText(LicenseField, foo);
+
+    //MemHandleUnlock (t);
+    DmReleaseResource(t);
+				
+		
+	}
+
+
+static void 
+	SIFormInit (FormPtr frmP)
+	{	g=1;
+		r=1;
+	setupListSIQuantity(SIList);
+	setupListDerQuantity(DerList);
+
+			setFieldText(QuantityField, Prefs.Quantity);
+			setFieldText(NameSIField, Prefs.NameSI);
+			setFieldText(SymbolSIField, Prefs.SymbolSI);
+			setFieldText(SymbolDerField, Prefs.SymbolDer);
+			setFieldText(SymbolDerInfo, Prefs.SymbolDer2);
+
+
+	FormCheck=1;
+
+	//setFieldText(ConstValueField, " ");
+		
+		// *** ADD FORM INITIALIZATION HERE *** //
+		
+	}
+
+
+static Boolean	doMenu(FormPtr frmP, UInt16 command)
+{
+	Boolean handled = false;
+	switch (command) {
+		case OptionsMenuAbout:
+			copyFieldsConst();			
+			FrmGotoForm(AboutForm);
+			FormCheck=2;
+			handled = true;
+			break;
+		case CopyMenu:
+			getFieldText(ConstValueField, StringCopy);
+			ClipboardAddItem (clipboardText, StringCopy,StrLen(StringCopy));
+			handled = true;
+			break;
+		case ConstMenu:
+			copyFieldsConst();			
+			FrmGotoForm(SIForm);
+			FormCheck=1;
+			handled = true;
+			break;
+		case ResetMenu:
+			BlankUnits();
+			StrCopy(Prefs.Constant, "");	
+			StrCopy(Prefs.Constant2, "");
+			StrCopy(Prefs.Units, "");
+			StrCopy(Prefs.ConstValue, "");
+			setFieldText(ConstantField, Prefs.Constant);
+			setFieldText(ConstantField2, Prefs.Constant2);
+			setFieldText(UnitsField, Prefs.Units);
+			setFieldText(ConstValueField, Prefs.ConstValue);
+			Prefs.WC=42;
+			handled = true;
+			break;
+
+
+	}
+	return handled;
+}
+
+static Boolean	doMenuSI(FormPtr frmP, UInt16 command)
+{
+	Boolean handled = false;
+	switch (command) {
+		case OptionsMenuAbout:
+			copyFieldsSI();
+			FrmGotoForm(AboutForm);
+			FormCheck=2;
+			handled = true;
+			break;
+		case SIMenu:
+			copyFieldsSI();			
+			FrmGotoForm(MainForm);
+			FormCheck = 0;
+			handled = true;
+			break;
+
+		case ResetMenu2:
+		
+			StrCopy(Prefs.Quantity, "");
+			StrCopy(Prefs.NameSI, "");
+			StrCopy(Prefs.SymbolSI, "");
+			StrCopy(Prefs.SymbolDer, "");
+			StrCopy(Prefs.SymbolDer2, "");
+			setFieldText(QuantityField, Prefs.Quantity);
+			setFieldText(NameSIField, Prefs.NameSI);
+			setFieldText(SymbolSIField, Prefs.SymbolSI);
+			setFieldText(SymbolDerField, Prefs.SymbolDer);
+			setFieldText(SymbolDerInfo, Prefs.SymbolDer2);
+	
+
+			handled = true;
+			break;
+
+	}
+	return handled;
+}
+
+
+void	*
+	getObjectPtr (FormPtr frmP, Int16 resourceNo)
+	{
+		UInt16 objIndex=FrmGetObjectIndex(frmP,resourceNo);
+		return FrmGetObjectPtr(frmP,objIndex);
+	}
+
+static void 
+	setFieldText	(UInt32	fIndex, 
+			 char	*StrToShow)
+	{
+		FormPtr frmP	= FrmGetActiveForm();
+		void	*fieldP = getObjectPtr (frmP, fIndex);
+
+		// get the field's old text handle
+		MemHandle	oldH	= FldGetTextHandle(fieldP);
+		
+		//Copy our string into a memhandle
+
+		int	len	= StrLen(StrToShow);
+		MemHandle	mH	= MemHandleNew(len+1);
+		char	*mP	= MemHandleLock(mH);
+
+		StrCopy(mP, StrToShow);
+		
+		//The memhandle needs to be unlocked to work...
+		MemHandleUnlock(mH);
+
+		//To establish the field's link to the handle
+		FldSetTextHandle(fieldP,mH);
+
+		//To draw the field
+		FldDrawField(fieldP);
+		
+		// get rid of old handle
+		if (oldH != NULL)
+			MemHandleFree (oldH);
+	}
+
+// Use a function like this to find out what the field's contents 
+	// are and to put them into a string:
+
+		static void 
+	getFieldText (UInt32 fIndex, char *StrToGet)
+	{
+		FormPtr	frmP = FrmGetActiveForm();
+		void	*fieldP = getObjectPtr (frmP, fIndex);
+
+		MemHandle mH = FldGetTextHandle(fieldP);
+		char *mP=MemHandleLock(mH);
+		StrCopy(StrToGet, mP);
+		
+		MemHandleUnlock(mH);
+	}
+
+static void Constants (int i)
+	{
+
+			if(i==0)
+			{setupListAstroUnits(UnitsList);
+			d=0;}
+
+			if(i==1)
+			{setupListAtomicMassUnits(UnitsList);
+			d=1;}
+			if(i==2)
+			{setupListAtomicUnits(UnitsList);
+			d=2;}
+			if(i==3)
+			{BlankUnits();
+			setFieldText(UnitsField, "1/mol");
+			setFieldText(ConstantField2, "N");
+			setFieldText(ConstValueField, "6.02214199E23");
+			d=3;}
+			if(i==4)
+			{setupListBohrMagUnits(UnitsList);
+			d=4;}
+			if(i==5)
+			{BlankUnits();
+			setFieldText(UnitsField, "m");
+			setFieldText(ConstantField2, "a0");
+			setFieldText(ConstValueField, "0.5291772083e-10");
+			d=5;}
+			if(i==6)
+			{setupListBoltzmannUnits(UnitsList);
+			d=6;}
+			if(i==7)
+			{BlankUnits();
+			setFieldText(UnitsField, "Ohm");
+			setFieldText(ConstantField2, "Z0=Sqrt(µ0/epsilon0)/2Pi");
+			setFieldText(ConstValueField, "376.730313461");
+			d=7;}
+			if(i==8)
+			{BlankUnits();
+			setFieldText(UnitsField, "F/m");
+			setFieldText(ConstantField2, "epsilon0");
+			setFieldText(ConstValueField, "8.854187817E-12");
+			d=8;}
+			if(i==9)
+			{BlankUnits();
+			setFieldText(UnitsField, "C/kg");
+			setFieldText(ConstantField2, "-e/me");
+			setFieldText(ConstValueField, "-1.758820174E11");
+			d=9;}
+			if(i==10)
+			{BlankUnits();
+			setFieldText(UnitsField, "rad/(s*T)");
+			setFieldText(ConstantField2, "We/B");
+			setFieldText(ConstValueField, "1.75881962E11");
+			d=10;}
+
+			if(i==11)
+			{BlankUnits();
+			setFieldText(UnitsField, "");
+			setFieldText(ConstantField2, "ge");
+			setFieldText(ConstValueField, "-2.0023193043737");
+			d=11;}
+			if(i==12)
+			{BlankUnits();
+			setFieldText(UnitsField, "1/(s*T)");
+			setFieldText(ConstantField2, "gammae");
+			setFieldText(ConstValueField, "1.760859794E11");
+			d=12;}
+			if(i==13)
+			{BlankUnits();
+			setFieldText(UnitsField, "MHz/T");
+			setFieldText(ConstantField2, "gammae/2Pi");
+			setFieldText(ConstValueField, "28024.9450");
+			d=13;}
+			if(i==14)
+			{setupListElMagMomUnits(UnitsList);
+			d=14;}
+			if(i==15)
+			{setupListElMassUnits(UnitsList);
+			d=15;}
+			if(i==16)
+			{BlankUnits();
+			setFieldText(UnitsField, "m");
+			setFieldText(ConstantField2, "");
+			setFieldText(ConstValueField, "2.81794092E-15");
+			d=16;}
+
+			if(i==17)
+			{setupListElVoltUnits(UnitsList);
+			d=17;}
+			if(i==18)
+			{BlankUnits();
+			setFieldText(UnitsField, "C");
+			setFieldText(ConstantField2, "e");
+			setFieldText(ConstValueField, "1.602176462E-19");
+			d=18;}
+			if(i==19)
+			{BlankUnits();
+			setFieldText(UnitsField, "torr/s");
+			setFieldText(ConstantField2, "L");
+			setFieldText(ConstValueField, "1e-6");
+			d=19;}
+			if(i==20)
+			{BlankUnits();
+			setFieldText(UnitsField, "C/mol");
+			setFieldText(ConstantField2, "F");
+			setFieldText(ConstValueField, "96485.3415");
+			d=20;}
+			if(i==21)
+			{BlankUnits();
+			setFieldText(UnitsField, " ");
+			setFieldText(ConstantField2, "alpha");
+			setFieldText(ConstValueField, "7.297352533E-3");
+			d=21;}
+			if(i==22)
+			{BlankUnits();
+			setFieldText(UnitsField, " ");
+			setFieldText(ConstantField2, "tau = (sqrt(5)+1)/2");
+			setFieldText(ConstValueField, "1.6180339887499");
+			d=22;}
+			if(i==23)
+			{BlankUnits();
+			setFieldText(UnitsField, " ");
+			setFieldText(ConstantField2, "1/alpha");
+			setFieldText(ConstValueField, "137.03599976");
+			d=23;}
+			if(i==24)
+			{setupListHartreeUnits(UnitsList);
+			d=24;}
+			if(i==25)
+			{setupListJouleUnits(UnitsList);
+			d=25;}
+			if(i==26)
+			{setupListKelvinUnits(UnitsList);
+			d=25;}
+			if(i==27)
+			{setupListkgUnits(UnitsList);
+			d=27;}
+			if(i==28)
+			{BlankUnits();
+			setFieldText(UnitsField, "m");
+			setFieldText(ConstantField2, "a");
+			setFieldText(ConstValueField, "0.543102088E-9");
+			d=28;}
+			if(i==29)
+			{BlankUnits();
+			setFieldText(UnitsField, "N/A²");
+			setFieldText(ConstantField2, "mu0 = 4PI*1E-7");
+			setFieldText(ConstValueField, "12.566370614E-7");
+			d=29;}
+			if(i==30)
+			{BlankUnits();
+			/*setFieldText(UnitsField, "Wb");
+			setFieldText(ConstantField2, "Phi0");
+			setFieldText(ConstValueField, "2.067833636E-15");
+			*/
+			setupListMagFluxUnits(UnitsList);
+			d=30;}
+			if(i==31)
+			{BlankUnits();
+			setFieldText(UnitsField, "m^3/(kg*s²)");
+			setFieldText(ConstantField2, "G");
+			setFieldText(ConstValueField, "6.673E-11");
+			d=31;}
+			if(i==32)
+			{BlankUnits();
+			setFieldText(UnitsField, "1/(GeV/c²)²");
+			setFieldText(ConstantField2, "G/(hbar*c)");
+			setFieldText(ConstValueField, "6.707E-39");
+			d=32;}
+			if(i==33)
+			{setupListPlanckUnits(UnitsList);
+			d=33;}
+			if(i==34)
+			{setupListPlanckUnits(UnitsList);	
+			d=34;}
+			if(i==35)
+			{BlankUnits();
+			setFieldText(UnitsField, "rad/(s*T)");
+			setFieldText(ConstantField2, "");
+			setFieldText(ConstValueField, "9.5788309E7");
+			d=35;}
+			if(i==36)
+			{setupListRydbergUnits(UnitsList);
+			d=36;}
+			if(i==37)
+			{BlankUnits();
+			setFieldText(UnitsField, "m/s");
+			setFieldText(ConstantField2, "c, c0");
+			setFieldText(ConstValueField, "299792458");
+			d=37;}
+			if(i==38)
+			{BlankUnits();
+			setFieldText(UnitsField, "m/s²");
+			setFieldText(ConstantField2, "g");
+			setFieldText(ConstValueField, "9.80665");
+			d=38;}
+			if(i==39)
+			{BlankUnits();
+			setFieldText(UnitsField, "Pa");
+			setFieldText(ConstantField2, " ");
+			setFieldText(ConstValueField, "101325");
+			d=39;}
+			if(i==40)
+			{BlankUnits();
+			setFieldText(UnitsField, "W/(m*K²)²");
+			setFieldText(ConstantField2, "sigma");
+			setFieldText(ConstValueField, "5.670400E-8");
+			d=40;}
+			if(i==41)
+			{setupListRUnits(UnitsList);
+			d=41;}		
+			//This acts as a blank.
+			if(i==42)
+			{}
+				}
+
+	static void BlankUnits()
+	{ setupBlanklist(UnitsList);
+	}
+
+
+void copyFieldsSI()
+{
+
+			getFieldText(QuantityField, Prefs.Quantity);
+			getFieldText(NameSIField, Prefs.NameSI);
+			getFieldText(SymbolSIField, Prefs.SymbolSI);
+			getFieldText(SymbolDerField, Prefs.SymbolDer);
+			getFieldText(SymbolDerInfo, Prefs.SymbolDer2);
+
+
+}
+
+
+void copyFieldsConst()
+{
+
+			getFieldText(ConstantField, Prefs.Constant);
+			getFieldText(ConstantField2, Prefs.Constant2);
+			getFieldText(UnitsField, Prefs.Units);
+			getFieldText(ConstValueField, Prefs.ConstValue);
+			
+}

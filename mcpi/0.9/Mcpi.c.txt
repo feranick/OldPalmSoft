@@ -1,0 +1,626 @@
+#define AppCreator 'MCPI'
+#include "FloatLib.h"
+	#define MainForm		1000
+	#define AboutForm 1100
+	#define LicenseForm	1150
+	#define ManualForm	1250
+	#define Field1 1010
+	#define Field2 1020
+	#define Field3 1030
+	#define Field4 1040
+	#define Field5 1050
+	//#define TimeField 1060
+	#define Btn	1100
+	#define OKBtn	1150
+	#define MaxNumbCyclesAlert 2150
+	#define MaxNumbCyclesAlertB 2250
+	#define OptionsMenuAbout 2000
+	#define AboutMenu 3100
+	#define gaussBtn 4000
+	#define circleBtn 4100
+	#define geomBtn 4200
+	#define InfoMenu 3200
+	#define CloseAboutMenuBtn 1110
+	#define LicenseBtn 1112
+	#define LicenseCloseBtn 1160
+	#define LicenseField 1170
+	#define ManualCloseBtn 1260
+	#define ManualField 1270
+
+	
+	#define InfoBtn 5200
+
+	// *** PUT UI-DEFINITIONS HERE *** //
+	
+	// Prototypes
+	void initMath();
+	static Boolean	appHandleEvent (EventPtr event);
+	static void	mainFormInit (FormPtr form);
+	static Boolean	mainFormEventHandler (EventPtr event);
+	static void AboutFormInit (FormPtr frmP);	
+	static Boolean AboutFormEventHandler(EventPtr event);	
+	static Boolean	LicenseFormEventHandler (EventPtr event);
+	static void	LicenseFormInit (FormPtr form);
+	static Boolean	ManualFormEventHandler (EventPtr event);
+	static void	ManualFormInit (FormPtr form);
+	//UInt32 TimGetSeconds (void) SYS_TRAP(sysTrapTimGetSeconds);  //already declared
+	//UInt32 TimGetTicks (void) SYS_TRAP(sysTrapTimGetTicks);  //already declared
+	UInt16 	SysTicksPerSecond(void)	SYS_TRAP(sysTrapSysTicksPerSecond);
+
+
+	void termMath();
+	int type;
+	Int32 startTime, stopTime, elapsedTime1, ticksPerSec;
+	double elapsedTime2, elapsedTime;
+	static char	bar[80];
+				static char StringTime1[50];
+				static char StringTime[80];
+                    	static char	PIvalue[80];
+				static char	PIAVvalue[80];
+				static char	PISDvalue[80];
+				static char	Progress[80]	= "Calculation in progress";
+				                    		 static char	bar3[80];
+				double theFloat, x,x1, x1c,x2c,x2,y,y1, yc, gc,si,tot;
+				double g,value ,pi,pi2,final,perc, area,sd,sd1, sd2,sd3, final2;
+				double tries,sd4;
+				double pitab=3.14159;
+
+	/*
+	 * startApp and stopApp are here for future reference.  They clearly 
+	 * don't do anything for this program, but it's a good idea to do 
+	 * program clean-up and shutdown in these files.  One thing that 
+	 * typically goes here is database opening and closing.
+	 */
+
+	static void	startApp()	{return;}
+	static void	stopApp()	{return;}
+
+	/*
+	 * A Palm program starts at the PilotMain function -- you can use 
+	 * this example verbatim for most (maybe all) your Palm applications.  
+	 * Some other examples might separate the event loop into a separate 
+	 * function but we've combined the two, here.  This function does 
+	 * the following.
+	 *
+	 *	o  calls startApp, 
+	 *	o  initiates the first form, 
+	 *	o  handles the event loop, 
+	 *	o  cleans-up (when it gets the 'leaving now' event), and 
+	 *	o  leaves.
+	 */
+
+
+		DWord
+	PilotMain(Word cmd, char *cmdPBP, Word launchFlags)
+	{
+		EventType	event;
+		Word		error;
+		if (cmd == sysAppLaunchCmdNormalLaunch) 
+		{
+			startApp();
+			initMath();
+			/*
+			 * FrmGotForm generates a frmLoadEvent that'll get 
+			 * handled as soon as we have an event handler that 
+			 * knows what to do with it.
+			 */
+
+			FrmGotoForm(MainForm);
+
+			/*
+			 * This loop gets events, handles the events, and 
+			 * checks to see if we've got a 'done' event.
+			 */
+
+			do 
+			{
+				/*
+				 * Wait for an event (we already generated the 
+				 * first one).
+				 */
+
+				EvtGetEvent(&event, evtWaitForever);
+
+				/*
+				 * Then, ask the system, the menu system, 
+				 * and our *OWN* event handlers (one for the 
+				 * application as a whole and one for the 
+				 * current form) to deal with the event.
+				 */
+
+				if (!SysHandleEvent (&event))
+				if (!MenuHandleEvent (0, &event, &error))
+				if (!appHandleEvent (&event))
+					FrmDispatchEvent (&event);
+
+			} while (event.eType != appStopEvent);
+
+			/*
+			 * When we're done, shut down
+			 */
+			termMath();	
+			stopApp();
+			FrmCloseAllForms();
+		}
+		return 0;
+	}
+
+	/*
+	 * This is the top-level event handler for the entire application.  
+	 * Here, we handle form load events and our menu events.
+	 */
+
+
+		static Boolean 
+	appHandleEvent (EventPtr event) 
+	{
+		FormPtr	frm;
+		Int	formId;
+		Boolean	handled = false;
+		
+		if (event->eType == frmLoadEvent) 
+		{
+			/*
+			* Load the resource for the form
+			*/
+
+			formId	= event->data.frmLoad.formID;
+			frm	= FrmInitForm(formId);
+
+			FrmSetActiveForm(frm);
+
+			/*
+			* install a form-specific event handler
+			*/
+
+			if (formId == MainForm)
+				FrmSetEventHandler (frm, mainFormEventHandler);
+			if (formId == AboutForm)
+				FrmSetEventHandler (frm, AboutFormEventHandler);
+			if (formId == LicenseForm)
+				FrmSetEventHandler (frm, LicenseFormEventHandler);
+			if (formId == ManualForm)
+				FrmSetEventHandler (frm, ManualFormEventHandler);
+
+			
+			// *** ADD NEW FORM HANDLING HERE *** //
+			
+
+			handled = true;
+		}       
+		return handled;
+	}
+
+
+	/*
+	 * This is the event handler for the main form.  It handles all of 
+	 * the user interactions with the user interface objects (e.g., 
+	 * buttons, lists, text fields, and such) on the main form.
+	 */
+
+
+		static Boolean
+	mainFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			mainFormInit(frmP);
+			handled = true;
+			break;  
+		case menuEvent:
+			handled=doMenu(frmP, event->data.menu.itemID);
+			break;
+
+		
+		// *** ADD EVENT HANDLING HERE *** //
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	Btn:
+			{
+				//add here
+				
+				getFieldText (Field1, bar);
+				FlpCompDouble theCompFloat;		
+				theCompFloat.fd = FlpAToF(bar);
+				theFloat = theCompFloat.d;
+				tries=fabs(theFloat);
+				
+			if(tries>10000)	
+				{UInt16 alertSelection = FrmAlert(MaxNumbCyclesAlert);
+				
+				if(alertSelection==0)
+				{UInt16 alertSelectionB = FrmAlert(MaxNumbCyclesAlertB);
+				
+				if(alertSelectionB==0)
+				{}
+				if(alertSelectionB==1)
+				{
+					setFieldText (Field1, "100");
+					handled = true;
+					break;}
+
+				}
+				if(alertSelection==1)
+				{
+				setFieldText (Field1, "100");
+				handled = true;
+				break;}
+				
+				
+				}
+
+			if(type==3)
+			{
+
+			startTime=TimGetSeconds();
+			for (double j=2.0; j<2*tries; j+=2.0)
+			{
+			perc=(j/2+1)*100/tries;
+				floatToStr(bar3,perc, 2);
+				setFieldText (Field2, bar3);
+				pi=(j/2)*(sin(pitab/j)*(1+cos(pitab/j)));
+			
+
+                        //value=pi+value;
+				//final=(2*value)/j;
+				sd=fabs(pi-pitab);
+
+			floatToStr(PIvalue,pi, 6);
+			setFieldText (Field3, PIvalue);
+			//floatToStr(PIAVvalue, final, 6);
+			setFieldText (Field4, "            ");
+			floatToStr(PISDvalue, sd, 6);
+			setFieldText (Field5, PISDvalue);
+
+			
+			
+			WinDrawChars (Progress,StrLen(Progress),45,1);
+			
+			}}
+			else
+			{
+				
+				si=0.0;
+				tot =0.0;
+				value=0.0;
+				final=0.0;
+				perc=0.0;
+				sd=0.0;
+				sd1=0.0;
+				
+				startTime = TimGetTicks();
+
+				for(double i=0.0;i<tries;i++)
+				{
+
+				perc=(i+1)*100/tries;
+				floatToStr(bar3,perc, 2);
+				setFieldText (Field2, bar3);
+				
+				x1=(SysRandom(0) %1001);
+				y1=(SysRandom(0) %1001);
+	             		y=y1/1000;
+				x =x1/1000;
+				g=sqrt(x*x+y*y);
+
+				if(type==1)
+				{
+				gc=1;}
+				
+				if(type==2)
+				{
+				yc=exp(-(x*x));
+				gc=sqrt(x*x+yc*yc);
+				}
+				tot=tot+1.0;
+				if(g<=gc)
+				{si=si+1.0;}
+				
+				area= si/tot;  
+				pi=area*4; //pi is the final value
+				
+				value=value+pi;	
+				final= value/i;
+				
+				sd	=fabs(final-pitab);	
+				
+				
+							
+			
+			WinDrawChars (Progress,StrLen(Progress),45,1);
+
+			   	
+			floatToStr(PIvalue,pi, 6);
+			setFieldText (Field3, PIvalue);
+			floatToStr(PIAVvalue, final, 6);
+			setFieldText (Field4, PIAVvalue);
+			floatToStr(PISDvalue, sd, 6);
+			setFieldText (Field5, PISDvalue);
+}
+
+}
+			
+
+			if (type!=3)
+			{
+			stopTime = TimGetTicks();
+			elapsedTime1=(stopTime-startTime)/SysTicksPerSecond();
+			elapsedTime2=(((stopTime-startTime)%SysTicksPerSecond()))/100.0;
+			elapsedTime=((long) elapsedTime1)+elapsedTime2;
+			StrCopy(StringTime, "Calc. Time: ");
+			floatToStr (StringTime1, elapsedTime, 2);
+			StrCat(StringTime, StringTime1);
+			StrCat(StringTime, " s");
+			}
+   			
+			static char	Done[100]	
+				= "                                                                ";
+			WinDrawChars (Done,StrLen(Done),45,1);
+			if(type!=3)
+			{
+			WinDrawChars (StringTime,StrLen(StringTime),45,1);
+			}
+			handled = true;
+			break;
+			}
+			//other buttons...
+			case InfoBtn:
+				{FrmGotoForm(ManualForm);
+				handled=true;
+				break;}
+			case gaussBtn:
+				{type=2;
+
+				handled=true;
+				break;}
+			case circleBtn:
+				{type =1;
+				handled=true;
+				break;}
+			case geomBtn:
+				{type =3;
+				handled=true;
+				break;}
+			}
+
+
+		}
+		return handled;
+	}
+
+	/*
+	 * This is the startup code for the form.  Here, we write our message 
+	 * to the screen.
+	 */
+
+
+	static void 
+	mainFormInit (FormPtr frmP)
+	{
+type=1;		
+//static char	foo[10]	= "Hello GUI";
+		
+		//WinDrawChars (foo,StrLen(foo),20,18);
+
+		setFieldText (Field1, "100");
+
+		// *** ADD FORM INITIALIZATION HERE *** //
+		
+	}
+
+
+		static void 
+	AboutFormInit (FormPtr frmP)
+	{
+				
+	}
+
+static void 
+	LicenseFormInit (FormPtr frmP)
+	{
+		
+		MemHandle t=DmGetResource('tSTR', 2000);
+
+
+    static Char    *foo    = (static Char *) MemHandleLock(t);
+   
+setFieldText(LicenseField, foo);
+
+    //MemHandleUnlock (t);
+    DmReleaseResource(t);
+		
+	}
+
+static void 
+	ManualFormInit (FormPtr frmP)
+	{
+		
+		MemHandle t=DmGetResource('tSTR', 2100);
+
+
+    static Char    *foo    = (static Char *) MemHandleLock(t);
+   
+setFieldText(ManualField, foo);
+
+    //MemHandleUnlock (t);
+    DmReleaseResource(t);
+		
+	}
+
+
+static Boolean
+	AboutFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			AboutFormInit(frmP);
+			handled = true;
+			break;  
+		
+		
+		// *** ADD EVENT HANDLING HERE *** //
+//BUTTONS
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	CloseAboutMenuBtn:
+			{	FrmGotoForm(MainForm);
+				handled = true;
+				break;
+			}
+			//other buttons...
+			case	LicenseBtn:
+			{	FrmGotoForm(LicenseForm);
+				handled = true;
+				break;
+			}
+			}
+			break;
+}
+return handled;
+}
+
+
+static Boolean
+	LicenseFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			LicenseFormInit(frmP);
+			handled = true;
+			break;  
+		
+		
+		// *** ADD EVENT HANDLING HERE *** //
+//BUTTONS
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	LicenseCloseBtn:
+			{	FrmGotoForm(AboutForm);
+				handled = true;
+				break;
+			}
+			//other buttons...
+			
+			}
+			break;
+}
+return handled;
+}
+
+
+static Boolean
+	ManualFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			ManualFormInit(frmP);
+			handled = true;
+			break;  
+		
+		
+		// *** ADD EVENT HANDLING HERE *** //
+//BUTTONS
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	ManualCloseBtn:
+			{	FrmGotoForm(MainForm);
+				handled = true;
+				break;
+			}
+			//other buttons...
+			
+			}
+			break;
+}
+return handled;
+}
+
+
+//*************************************************************************
+//  Routines necessary for MathLib
+//**************************************************************************
+
+
+void initMath() {
+Err err;
+err = SysLibFind("MathLib", &MathLibRef);
+if (err != 0) { // library not loaded already
+    err = SysLibLoad('libr', 'MthL', &MathLibRef);
+    if (err == 0)
+        err = MathLibOpen (MathLibRef, 1);
+    }
+}
+void termMath() {
+if (MathLibRef != -1) {
+    Err err;
+    UInt usecount;
+    err = MathLibClose (MathLibRef, &usecount);
+    if (usecount == 0)
+        SysLibRemove (MathLibRef);
+    }
+}
+
+
+//*************************************************************************
+static Boolean	doMenu(FormPtr frmP, Word command)
+{
+	Boolean handled = false;
+	switch (command) {
+			case AboutMenu:
+			FrmGotoForm(AboutForm);
+			handled = true;
+			break;
+
+			case InfoMenu:
+			FrmGotoForm(ManualForm);		
+			handled = true;
+			break;
+	}	
+	return handled;
+}
+

@@ -1,0 +1,35 @@
+Current release: TipTap 2.0 - 04/28/2006
+
+Bugfixes since version 1.9
+---------------------------
+#) New color and High resolution icons.
+#) Major code optimization and stability improvements.
+#) User manual improvements 
+
+
+Bugfixes since version 1.8
+---------------------------
+#) Option for the what to apply the tip to: before tax, after tax
+#) fixed bug while closing the preference menu: If the Total field was selected, upon returning to the mainform 
+
+
+
+Bugfixes since version 1.7
+---------------------------
+
+#) when focus on tip and left blank, after focus somewhere else, it remains blank.
+#) when focus on people and left blank, after conversion it's set as 1 (always).
+#) max number of char needs to be 11 on Amount and Total
+#) Modify long manual according to new improvements and UI
+#) There is an extra space in User manual first line
+#) when focus on tip in and close it, tip is zero
+#) when focus on tax in prefs, and close it, tax is zero
+#) Icon displays correctly in the Zire72
+#) fonts for tip and tax need to be the same as the rest of the fields
+#) Dollar or current symbol should be in front of the amount
+#) Drop down menu for people (1-10)
+#) tip field holds only 3 numbers
+#) Improve design for convert button
+#) set the default number of people
+#) general code optimization
+$) notified freewarepalm that Mathlib is not required

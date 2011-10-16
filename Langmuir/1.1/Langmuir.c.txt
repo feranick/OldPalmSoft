@@ -1,0 +1,771 @@
+#define appCreator 'LanG'
+#define appPrefID 1
+#define appPrefVersion 1
+#include "FloatLib.h"
+#define MainForm		1000
+#define AboutForm 1100	
+#define LicenseForm	1150
+#define ManualForm	1250
+	#define Pressure 1010
+	#define PTypeF 7010
+	#define ExpSec 1020
+	#define ExpMin 1030
+	#define ExpMin2 1035
+	#define Langmuir 1040
+	#define MBar 1500
+	#define Torr 1510
+	#define LngmBtn	1100
+	#define ResetBtn 1110 
+	#define AboutAlert 2000
+	#define NegativeNumbAlert 2010
+	#define OptionsMenuAbout 2000
+	#define CloseAboutMenuBtn 1112
+	#define LicenseBtn 1114
+	#define LicenseCloseBtn 1160
+	#define LicenseField 1170
+	#define ManualCloseBtn 1260
+	#define ManualField 1270
+	#define ManualMenuAbout 3000
+	#define KeyboardMenu 9999
+	#define GraffitiMenu 9998
+
+
+	typedef enum { 
+  		nfCommaPeriod, 
+ 		 nfPeriodComma, 
+ 		 nfSpaceComma, 
+ 		 nfApostrophePeriod, 
+ 		 nfApostropheComma 
+		} NumberFormatType;
+	
+	typedef enum 
+		{
+		kbdAlpha = 0, 
+		kbdNumbersAndPunc = 1, 
+		kbdAccent = 2,
+		kbdDefault = 0xff	
+		} KeyboardType;
+	
+	typedef enum 
+		{
+		referenceDefault = 0xff	
+		} ReferenceType;
+
+	// *** PUT UI-DEFINITIONS HERE *** //
+	
+	// Prototypes
+
+	int FormCheck, d;
+	static char		PresChar[150];
+	static char 	PTypeChar [150];
+	static char		SecsChar[150];
+	static char 	MinsChar[150];
+	static char 	Mins2Char[150];
+	static char 	LangmuirsChar[150];
+	static char		Pbar[10];
+	static char 	PType[10];
+	static char		Sbar[80];
+	static char		Mbar[80];
+	static char 	Mbar2[80];
+	static char       Lbar[80];
+	double Press, Mins, Secs, a, b, c,e, Mins2;
+	static double Pconst = 0.000001;
+	double conversion();
+	void display();		
+	
+	void LocGetNumberSeparators (NumberFormatType prefnumberFormat, Char *thousandSeparator, Char *decimalSeparator)
+		SYS_TRAP(sysTrapLocGetNumberSeparators);
+	CharPtr StrDelocalizeNumber (CharPtr s, Char thousandSeparator, Char decimalSeparator)
+		SYS_TRAP(sysTrapStrDelocalizeNumber);
+	void SysKeyboardDialog (KeyboardType kbd)
+		SYS_TRAP(sysTrapSysKeyboardDialog);
+	void SysGraffitiReferenceDialog (ReferenceType referenceType)
+		SYS_TRAP(sysTrapSysGraffitiReferenceDialog);
+
+
+
+	void initMath();
+	static Boolean	appHandleEvent (EventPtr event);
+	static void	mainFormInit (FormPtr form);
+	static Boolean	mainFormEventHandler (EventPtr event);
+	static void	AboutFormInit (FormPtr form);
+	static Boolean	AboutFormEventHandler (EventPtr event);
+	static Boolean	LicenseFormEventHandler (EventPtr event);
+	static void	LicenseFormInit (FormPtr form);
+	static Boolean	ManualFormEventHandler (EventPtr event);
+	static void	ManualFormInit (FormPtr form);	
+
+	double mbartotorr;	
+	void termMath();
+	
+typedef struct { 
+   	char Secs[150];
+	char Pres[150];
+	char Mins[150];
+	char Mins2[150];
+	char Langmuirs[150];
+	char PType2[150];
+	
+	} LangmuirPreferenceType; 
+	
+	LangmuirPreferenceType Prefs; 
+
+	/*
+	 * startApp and stopApp are here for future reference.  They clearly 
+	 * don't do anything for this program, but it's a good idea to do 
+	 * program clean-up and shutdown in these files.  One thing that 
+	 * typically goes here is database opening and closing.
+	 */
+
+	static void	startApp()	
+	{UInt16 sizePrefs = sizeof(LangmuirPreferenceType );
+	Int16 rc;	
+	rc=PrefGetAppPreferences(appCreator, appPrefID,(void*)(&Prefs), &sizePrefs, true);
+	StrCopy(SecsChar, Prefs.Secs);
+	StrCopy(PresChar, Prefs.Pres);
+	StrCopy(PTypeChar, Prefs.PType2);
+	StrCopy(MinsChar, Prefs.Mins);
+	StrCopy(Mins2Char, Prefs.Mins2);
+	StrCopy(LangmuirsChar, Prefs.Langmuirs);
+
+
+	if (rc == noPreferenceFound) 
+	{StrCopy(SecsChar, "60");
+	StrCopy(PresChar, "1.0e-7");
+	StrCopy(PTypeChar, "mbar");
+	StrCopy(MinsChar, "1");
+	StrCopy(Mins2Char, "0");
+	StrCopy(LangmuirsChar, "4.5");}
+
+	return;}
+
+	static void	stopApp()	
+	{if(FormCheck==1)
+	{FrmGotoForm(MainForm);
+	break;}
+		getFieldText(Pressure, PresChar);
+	StrCopy(Prefs.Pres, PresChar);
+	getFieldText(PTypeF, PTypeChar);
+	StrCopy(Prefs.PType2, PTypeChar);
+	getFieldText(ExpSec, SecsChar);
+	StrCopy(Prefs.Secs, SecsChar);
+	getFieldText(ExpMin, MinsChar);
+	StrCopy(Prefs.Mins, MinsChar);
+	getFieldText(ExpMin2, Mins2Char);
+	StrCopy(Prefs.Mins2, Mins2Char);
+	getFieldText(Langmuir, LangmuirsChar);
+	StrCopy(Prefs.Langmuirs, LangmuirsChar);
+
+	PrefSetAppPreferences (appCreator, appPrefID,  appPrefVersion, &Prefs, sizeof (Prefs), true); 
+		
+
+
+	return;}
+
+	/*
+	 * A Palm program starts at the PilotMain function -- you can use 
+	 * this example verbatim for most (maybe all) your Palm applications.  
+	 * Some other examples might separate the event loop into a separate 
+	 * function but we've combined the two, here.  This function does 
+	 * the following.
+	 *
+	 *	o  calls startApp, 
+	 *	o  initiates the first form, 
+	 *	o  handles the event loop, 
+	 *	o  cleans-up (when it gets the 'leaving now' event), and 
+	 *	o  leaves.
+	 */
+
+
+		DWord
+	PilotMain(Word cmd, char *cmdPBP, Word launchFlags)
+	{
+		EventType	event;
+		Word		error;
+		if (cmd == sysAppLaunchCmdNormalLaunch) 
+		{
+			startApp();
+			initMath();
+			/*
+			 * FrmGotForm generates a frmLoadEvent that'll get 
+			 * handled as soon as we have an event handler that 
+			 * knows what to do with it.
+			 */
+
+			FrmGotoForm(MainForm);
+
+			/*
+			 * This loop gets events, handles the events, and 
+			 * checks to see if we've got a 'done' event.
+			 */
+
+			do 
+			{
+				/*
+				 * Wait for an event (we already generated the 
+				 * first one).
+				 */
+
+				EvtGetEvent(&event, evtWaitForever);
+
+				/*
+				 * Then, ask the system, the menu system, 
+				 * and our *OWN* event handlers (one for the 
+				 * application as a whole and one for the 
+				 * current form) to deal with the event.
+				 */
+
+				if (!SysHandleEvent (&event))
+				if (!MenuHandleEvent (0, &event, &error))
+				if (!appHandleEvent (&event))
+					FrmDispatchEvent (&event);
+
+			} while (event.eType != appStopEvent);
+
+			/*
+			 * When we're done, shut down
+			 */
+			termMath();	
+			stopApp();
+			FrmCloseAllForms();
+		}
+		return 0;
+	}
+
+	/*
+	 * This is the top-level event handler for the entire application.  
+	 * Here, we handle form load events and our menu events.
+	 */
+
+
+		static Boolean 
+	appHandleEvent (EventPtr event) 
+	{
+		FormPtr	frm;
+		Int	formId;
+		Boolean	handled = false;
+		
+		if (event->eType == frmLoadEvent) 
+		{
+			/*
+			* Load the resource for the form
+			*/
+
+			formId	= event->data.frmLoad.formID;
+			frm	= FrmInitForm(formId);
+
+			FrmSetActiveForm(frm);
+
+			/*
+			* install a form-specific event handler
+			*/
+
+			if (formId == MainForm)
+				FrmSetEventHandler (frm, mainFormEventHandler);
+			if (formId == AboutForm)
+				FrmSetEventHandler (frm, AboutFormEventHandler);
+			if (formId == LicenseForm)
+				FrmSetEventHandler (frm, LicenseFormEventHandler);
+			if (formId == ManualForm)
+				FrmSetEventHandler (frm, ManualFormEventHandler);
+
+			// *** ADD NEW FORM HANDLING HERE *** //
+			
+
+			handled = true;
+		}       
+		return handled;
+	}
+
+
+	/*
+	 * This is the event handler for the main form.  It handles all of 
+	 * the user interactions with the user interface objects (e.g., 
+	 * buttons, lists, text fields, and such) on the main form.
+	 */
+
+
+		static Boolean
+	mainFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			mainFormInit(frmP);
+			handled = true;
+			break;  
+		case menuEvent:
+			handled=doMenu(frmP, event->data.menu.itemID);
+			break;
+
+		
+			case fldEnterEvent:
+                  switch(event->data.fldEnter.fieldID)
+			{	
+						
+			case ExpSec:
+			{
+			setFieldText (ExpSec, "");
+			FrmSetFocus(frmP, FrmGetObjectIndex(frmP, ExpSec));
+			handled = true;
+			break;}
+
+
+			break;
+			}	
+
+
+		// *** ADD EVENT HANDLING HERE *** //
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	LngmBtn:
+			{
+				//add here
+				
+			conversion();
+
+							
+				//No negative numbers	
+				if(Press<0.0)
+				{
+				FrmAlert(NegativeNumbAlert);
+				//Press=fabs(Press);
+				//floatToStrScientific(Pbar, Press, 6);
+				//setFieldText (Pressure, Pbar);
+				setFieldText (Pressure, PresChar);
+				setFieldText (PTypeF, PTypeChar);
+				setFieldText (ExpSec, SecsChar);
+				setFieldText (ExpMin, MinsChar);
+				setFieldText (ExpMin2, Mins2Char);
+				setFieldText (Langmuir, LangmuirsChar);
+				handled = true;
+				break;
+				}
+
+			display();
+				handled = true;
+				break;
+			}
+			
+			case	ResetBtn:
+			{
+
+				setFieldText (Pressure, "1.0e-7");
+				setFieldText (PTypeF, "mbar");
+				setFieldText (ExpSec, "60.0");
+				setFieldText (ExpMin, "1");
+				setFieldText (ExpMin2, "0");
+				setFieldText (Langmuir, "4.5");
+			}
+
+			case MBar:
+			{
+				mbartotorr=0.7500638;
+				setFieldText (PTypeF, "mbar");
+				conversion();
+
+							
+				//No negative numbers	
+				if(Press<0.0)
+				{
+				FrmAlert(NegativeNumbAlert);
+				//Press=fabs(Press);
+				//floatToStrScientific(Pbar, Press, 6);
+				//setFieldText (Pressure, Pbar);
+				setFieldText (Pressure, PresChar);
+				setFieldText (PTypeF, "mbar");
+				setFieldText (ExpSec, SecsChar);
+				setFieldText (ExpMin, MinsChar);
+				setFieldText (ExpMin2, Mins2Char);
+				setFieldText (Langmuir, LangmuirsChar);
+
+				handled = true;
+				break;
+				}
+
+			display();
+
+				handled = true;
+				break;
+			}
+
+			case Torr:
+			{
+				mbartotorr=1.0;
+				setFieldText (PTypeF, "torr");
+				conversion();
+
+							
+				//No negative numbers	
+				if(Press<0.0)
+				{
+				FrmAlert(NegativeNumbAlert);
+				//Press=fabs(Press);
+				//floatToStrScientific(Pbar, Press, 6);
+				//setFieldText (Pressure, Pbar);
+				setFieldText (Pressure, PresChar);
+				setFieldText (PTypeF, "torr");
+				setFieldText (ExpSec, SecsChar);
+				setFieldText (ExpMin, MinsChar);
+				setFieldText (ExpMin2, Mins2Char);
+				setFieldText (Langmuir, LangmuirsChar);
+
+				handled = true;
+				break;
+				}
+
+			display();
+
+			handled = true;
+				break;
+			}
+//other buttons...
+
+
+			}
+
+
+		}
+		return handled;
+	}
+
+	/*
+	 * This is the startup code for the form.  Here, we write our message 
+	 * to the screen.
+	 */
+
+		static void 
+	mainFormInit (FormPtr frmP)
+	{
+		
+		mbartotorr=0.7500638;
+		setFieldText (Pressure, PresChar);
+		setFieldText (PTypeF, PTypeChar);
+		setFieldText (ExpSec, SecsChar);
+		setFieldText (ExpMin, MinsChar);
+		setFieldText (ExpMin2, Mins2Char);
+		setFieldText (Langmuir, LangmuirsChar);
+
+FormCheck=0;
+				FlpCompDouble theCompFloatP;
+				FlpCompDouble theCompFloatS;
+				FlpCompDouble theCompFloatM;
+				FlpCompDouble theCompFloatM2;
+
+
+				
+				getFieldText (Pressure, Pbar);
+				theCompFloatP.fd = FlpAToF(Pbar);
+				Press = theCompFloatP.d;
+
+				getFieldText (ExpSec, Sbar);
+				getFieldText (ExpMin, Mbar);
+				getFieldText (ExpMin2, Mbar2);
+
+				theCompFloatS.fd = FlpAToF(Sbar);
+				Secs = theCompFloatS.d;
+				theCompFloatM.fd = FlpAToF(Mbar);
+				Mins = theCompFloatM.d;
+				theCompFloatM2.fd = FlpAToF(Mbar2);
+				Mins2 = theCompFloatM2.d;
+
+				
+
+		
+		// *** ADD FORM INITIALIZATION HERE *** //
+		
+	}
+
+
+static void 
+	AboutFormInit (FormPtr frmP)
+	{
+		
+		// *** ADD FORM INITIALIZATION HERE *** //
+		
+	}
+
+static void 
+	LicenseFormInit (FormPtr frmP)
+	{
+		
+		MemHandle t=DmGetResource('tSTR', 2000);
+
+
+    static Char    *foo    = (static Char *) MemHandleLock(t);
+   
+setFieldText(LicenseField, foo);
+
+    //MemHandleUnlock (t);
+    DmReleaseResource(t);
+		
+	}
+
+static void 
+	ManualFormInit (FormPtr frmP)
+	{
+		
+		MemHandle t=DmGetResource('tSTR', 2100);
+
+
+    static Char    *foo    = (static Char *) MemHandleLock(t);
+   
+setFieldText(ManualField, foo);
+
+    //MemHandleUnlock (t);
+    DmReleaseResource(t);
+		
+	}
+
+
+static Boolean
+	AboutFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			AboutFormInit(frmP);
+			handled = true;
+			break;  
+		
+		
+		// *** ADD EVENT HANDLING HERE *** //
+//BUTTONS
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	CloseAboutMenuBtn:
+			{	FrmGotoForm(MainForm);
+				handled = true;
+				break;
+			}
+			
+			case	LicenseBtn:
+			{	FrmGotoForm(LicenseForm);
+				handled = true;
+				break;
+			}
+
+			//other buttons...
+			}
+			break;
+			}
+			return handled;
+}
+
+static Boolean
+	LicenseFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			LicenseFormInit(frmP);
+			handled = true;
+			break;  
+		
+		
+		// *** ADD EVENT HANDLING HERE *** //
+//BUTTONS
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	LicenseCloseBtn:
+			{	FrmGotoForm(AboutForm);
+				handled = true;
+				break;
+			}
+			//other buttons...
+			
+			}
+			break;
+}
+return handled;
+}
+
+
+static Boolean
+	ManualFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			ManualFormInit(frmP);
+			handled = true;
+			break;  
+		
+		
+		// *** ADD EVENT HANDLING HERE *** //
+//BUTTONS
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	ManualCloseBtn:
+			{	FrmGotoForm(MainForm);
+				handled = true;
+				break;
+			}
+			//other buttons...
+			
+			}
+			break;
+}
+
+
+return handled;
+}
+
+//*************************************************************************
+//  Routines necessary for MathLib
+//**************************************************************************
+
+
+void initMath() {
+Err err;
+err = SysLibFind("MathLib", &MathLibRef);
+if (err != 0) { // library not loaded already
+    err = SysLibLoad('libr', 'MthL', &MathLibRef);
+    if (err == 0)
+        err = MathLibOpen (MathLibRef, 1);
+    }
+}
+void termMath() {
+if (MathLibRef != -1) {
+    Err err;
+    UInt usecount;
+    err = MathLibClose (MathLibRef, &usecount);
+    if (usecount == 0)
+        SysLibRemove (MathLibRef);
+    }
+}
+
+
+//*************************************************************************
+static Boolean	doMenu(FormPtr frmP, Word command)
+{
+	Boolean handled = false;
+	switch (command) {
+			case OptionsMenuAbout:
+			getFieldText(Pressure, PresChar);
+			StrCopy(Prefs.Pres, PresChar);
+			getFieldText(ExpSec, SecsChar);
+			StrCopy(Prefs.Secs, SecsChar);
+			getFieldText(ExpMin, MinsChar);
+			StrCopy(Prefs.Mins, MinsChar);
+			getFieldText(ExpMin2, Mins2Char);
+			StrCopy(Prefs.Mins2, Mins2Char);
+			getFieldText(Langmuir, LangmuirsChar);
+			StrCopy(Prefs.Langmuirs, LangmuirsChar);
+
+			FrmGotoForm(AboutForm);
+			FormCheck=1;
+			handled = true;
+			break;
+			
+			case ManualMenuAbout:
+			getFieldText(Pressure, PresChar);
+			StrCopy(Prefs.Pres, PresChar);
+			getFieldText(ExpSec, SecsChar);
+			StrCopy(Prefs.Secs, SecsChar);
+			getFieldText(ExpMin, MinsChar);
+			StrCopy(Prefs.Mins, MinsChar);
+			getFieldText(ExpMin2, Mins2Char);
+			StrCopy(Prefs.Mins2, Mins2Char);
+			getFieldText(Langmuir, LangmuirsChar);
+			StrCopy(Prefs.Langmuirs, LangmuirsChar);
+
+			FrmGotoForm(ManualForm);
+			FormCheck=1;
+			handled = true;
+			break;
+			
+			case KeyboardMenu:
+			SysKeyboardDialog(kbdNumbersAndPunc);
+			handled = true;
+			break;
+
+			case GraffitiMenu:
+			SysGraffitiReferenceDialog(referenceDefault);
+			handled = true;
+			break;
+
+	}
+
+	return handled;
+}
+
+double conversion()
+
+{FlpCompDouble theCompFloatP;
+				FlpCompDouble theCompFloatS;
+				FlpCompDouble theCompFloatM;
+				
+				
+				getFieldText (Pressure, Pbar);
+				theCompFloatP.fd = FlpAToF(Pbar);
+				Press = theCompFloatP.d;
+
+				getFieldText (ExpSec, Sbar);
+				//getFieldText (ExpMin, Mbar);
+				theCompFloatS.fd = FlpAToF(Sbar);
+				Secs = theCompFloatS.d;
+				//theCompFloatM.fd = FlpAToF(Mbar);
+				//Mins = theCompFloatM.d;
+				
+				// Math calculation
+				b=(Press*mbartotorr)*Secs/Pconst;
+				
+				c=Secs;
+			   	d=fabs(Secs/60);
+				e=((Secs/60)-d)*60;
+				floatToStr(Sbar, c, 1);
+				floatToStr(Mbar, d, 0);
+				floatToStr(Mbar2, e, 1);}
+				
+void display()
+			{	setFieldText (ExpMin, Mbar);
+				setFieldText (ExpMin2, Mbar2);
+				setFieldText (ExpSec, Sbar);
+				floatToStr(Lbar, b, 1);
+				setFieldText (Langmuir, Lbar);
+				c=0;
+				d=0;
+				b=0;
+
+			}

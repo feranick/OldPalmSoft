@@ -1,0 +1,7 @@
+TVA version 1.0 est un freeware (gratuit). En aucun cas vous ne pourrez me rendre responsable des dommages que vous feriez à votre système en utilisant TVA 1.0. Vous pouvez donner des copies individuelles du logiciel tant que vous ne modifiez pas TVA 1.0. d'origine. Vous comprenez que l'utilisation se fait à vos risques et périls. 
+
+PalmTVA 1.0 - Nicola Ferralis
+(C) 2003 Tous droit réservés.
+
+Saisi le montant TTC ou HT et sélectionner le taux de TVA, 5,50 % au 19,90 %.
+Si vous souhaitez annuler et de recommencer, il vous suffit de cliquer sur le bouton effacer. Ce logiciel devient vite indispensable, même pour un usage personnel.

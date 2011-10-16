@@ -1,0 +1,340 @@
+#define AppCreator 'Conv'
+#include "FloatLib.h"
+	#define MainForm		1000
+	#define Pressure 1010
+	#define ExpSec 1020
+	#define ExpMin 1030
+	#define Langmuir 1040
+	#define MBar 1500
+	#define Torr 1510
+
+	#define LngmBtn	1100
+	#define ResetBtn 1110 
+	#define AboutAlert 2000
+	#define NegativeNumbAlert 2010
+	#define OptionsMenuAbout 2000
+	// *** PUT UI-DEFINITIONS HERE *** //
+	
+	// Prototypes
+	void initMath();
+	static Boolean	appHandleEvent (EventPtr event);
+	static void	mainFormInit (FormPtr form);
+	static Boolean	mainFormEventHandler (EventPtr event);
+	double mbartotorr;	
+	void termMath();
+	
+
+	/*
+	 * startApp and stopApp are here for future reference.  They clearly 
+	 * don't do anything for this program, but it's a good idea to do 
+	 * program clean-up and shutdown in these files.  One thing that 
+	 * typically goes here is database opening and closing.
+	 */
+
+	static void	startApp()	{return;}
+	static void	stopApp()	{return;}
+
+	/*
+	 * A Palm program starts at the PilotMain function -- you can use 
+	 * this example verbatim for most (maybe all) your Palm applications.  
+	 * Some other examples might separate the event loop into a separate 
+	 * function but we've combined the two, here.  This function does 
+	 * the following.
+	 *
+	 *	o  calls startApp, 
+	 *	o  initiates the first form, 
+	 *	o  handles the event loop, 
+	 *	o  cleans-up (when it gets the 'leaving now' event), and 
+	 *	o  leaves.
+	 */
+
+
+		DWord
+	PilotMain(Word cmd, char *cmdPBP, Word launchFlags)
+	{
+		EventType	event;
+		Word		error;
+		if (cmd == sysAppLaunchCmdNormalLaunch) 
+		{
+			startApp();
+			initMath();
+			/*
+			 * FrmGotForm generates a frmLoadEvent that'll get 
+			 * handled as soon as we have an event handler that 
+			 * knows what to do with it.
+			 */
+
+			FrmGotoForm(MainForm);
+
+			/*
+			 * This loop gets events, handles the events, and 
+			 * checks to see if we've got a 'done' event.
+			 */
+
+			do 
+			{
+				/*
+				 * Wait for an event (we already generated the 
+				 * first one).
+				 */
+
+				EvtGetEvent(&event, evtWaitForever);
+
+				/*
+				 * Then, ask the system, the menu system, 
+				 * and our *OWN* event handlers (one for the 
+				 * application as a whole and one for the 
+				 * current form) to deal with the event.
+				 */
+
+				if (!SysHandleEvent (&event))
+				if (!MenuHandleEvent (0, &event, &error))
+				if (!appHandleEvent (&event))
+					FrmDispatchEvent (&event);
+
+			} while (event.eType != appStopEvent);
+
+			/*
+			 * When we're done, shut down
+			 */
+			termMath();	
+			stopApp();
+			FrmCloseAllForms();
+		}
+		return 0;
+	}
+
+	/*
+	 * This is the top-level event handler for the entire application.  
+	 * Here, we handle form load events and our menu events.
+	 */
+
+
+		static Boolean 
+	appHandleEvent (EventPtr event) 
+	{
+		FormPtr	frm;
+		Int	formId;
+		Boolean	handled = false;
+		
+		if (event->eType == frmLoadEvent) 
+		{
+			/*
+			* Load the resource for the form
+			*/
+
+			formId	= event->data.frmLoad.formID;
+			frm	= FrmInitForm(formId);
+
+			FrmSetActiveForm(frm);
+
+			/*
+			* install a form-specific event handler
+			*/
+
+			if (formId == MainForm)
+				FrmSetEventHandler (frm, mainFormEventHandler);
+
+			
+			// *** ADD NEW FORM HANDLING HERE *** //
+			
+
+			handled = true;
+		}       
+		return handled;
+	}
+
+
+	/*
+	 * This is the event handler for the main form.  It handles all of 
+	 * the user interactions with the user interface objects (e.g., 
+	 * buttons, lists, text fields, and such) on the main form.
+	 */
+
+
+		static Boolean
+	mainFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			mainFormInit(frmP);
+			handled = true;
+			break;  
+		case menuEvent:
+			handled=doMenu(frmP, event->data.menu.itemID);
+			break;
+
+		
+		// *** ADD EVENT HANDLING HERE *** //
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	LngmBtn:
+			{
+				//add here
+				static char	Pbar[10];
+				static char	Sbar[80];
+				static char	Mbar[80];
+				static char     Lbar[80];
+				FlpCompDouble theCompFloatP;
+				FlpCompDouble theCompFloatS;
+				FlpCompDouble theCompFloatM;
+				double Press, Mins, Secs, a, b, c,d;
+				static double Pconst = 0.000001;
+				
+				
+				getFieldText (Pressure, Pbar);
+				theCompFloatP.fd = FlpAToF(Pbar);
+				Press = theCompFloatP.d;
+
+				getFieldText (ExpSec, Sbar);
+				getFieldText (ExpMin, Mbar);
+				theCompFloatS.fd = FlpAToF(Sbar);
+				Secs = theCompFloatS.d;
+				theCompFloatM.fd = FlpAToF(Mbar);
+				Mins = theCompFloatM.d;
+				
+				// Math calculation
+				
+			
+				//No negative numbers	
+				if(Press<0.0)
+				{
+				FrmAlert(NegativeNumbAlert);
+				//Press=fabs(Press);
+				//floatToStrScientific(Pbar, Press, 6);
+				//setFieldText (Pressure, Pbar);
+				setFieldText (Pressure, "1.0e-7");
+				setFieldText (ExpSec, "60.0");
+				setFieldText (ExpMin, "1.0");
+				setFieldText (Langmuir, "4.5");
+				handled = true;
+				break;
+				}
+
+				b=(Press*mbartotorr)*Secs/Pconst;
+				
+				c=Secs;
+			   	d=Secs/60;
+				floatToStr(Sbar, c, 1);
+				floatToStr(Mbar, d, 1);
+				setFieldText (ExpMin, Mbar);
+				setFieldText (ExpSec, Sbar);
+				floatToStr(Lbar, b, 1);
+				setFieldText (Langmuir, Lbar);
+				c=0;
+				d=0;
+				b=0;
+
+				handled = true;
+				break;
+			}
+			
+			case	ResetBtn:
+			{
+
+				setFieldText (Pressure, "1.0e-7");
+				setFieldText (ExpSec, "60.0");
+				setFieldText (ExpMin, "1.0");
+				setFieldText (Langmuir, "4.5");
+			}
+
+			case MBar:
+			{
+				mbartotorr=0.7500638;
+				handled = true;
+				break;
+			}
+
+			case Torr:
+			{
+				mbartotorr=1.0;
+				handled = true;
+				break;
+			}
+//other buttons...
+
+
+			}
+
+
+		}
+		return handled;
+	}
+
+	/*
+	 * This is the startup code for the form.  Here, we write our message 
+	 * to the screen.
+	 */
+
+		static void 
+	mainFormInit (FormPtr frmP)
+	{
+		//static char	foo[10]	= "Hello GUI";
+		
+		//WinDrawChars (foo,StrLen(foo),20,18);
+		mbartotorr=0.7500638;
+		setFieldText (Pressure, "1.0e-7");
+		setFieldText (ExpSec, "60.0");
+		setFieldText (ExpMin, "1.0");
+		setFieldText (Langmuir, "4.5");
+
+
+
+
+		// *** ADD FORM INITIALIZATION HERE *** //
+		
+	}
+
+
+
+
+//*************************************************************************
+//  Routines necessary for MathLib
+//**************************************************************************
+
+
+void initMath() {
+Err err;
+err = SysLibFind("MathLib", &MathLibRef);
+if (err != 0) { // library not loaded already
+    err = SysLibLoad('libr', 'MthL', &MathLibRef);
+    if (err == 0)
+        err = MathLibOpen (MathLibRef, 1);
+    }
+}
+void termMath() {
+if (MathLibRef != -1) {
+    Err err;
+    UInt usecount;
+    err = MathLibClose (MathLibRef, &usecount);
+    if (usecount == 0)
+        SysLibRemove (MathLibRef);
+    }
+}
+
+
+//*************************************************************************
+static Boolean	doMenu(FormPtr frmP, Word command)
+{
+	Boolean handled = false;
+	switch (command) {
+			case OptionsMenuAbout:
+			FrmAlert(AboutAlert);
+			handled = true;
+			break;
+			
+	}
+	return handled;
+}
+

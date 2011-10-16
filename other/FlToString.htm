@@ -1,0 +1,133 @@
+<html>
+<head>
+<META name="description" content="This page discusses floating point software development for the
+PalmPilot  using GNU CC++.">
+<META name="keywords" content="PalmPilot, Palm Handheld, floating point conversion, sofware development.">
+<title>Bray Palm Handheld Page - Double to String Conversion Routines</title>
+</head>
+<body bgcolor= "#ffffff">
+
+<center>
+<a name="top"><h3>Double to String Conversion Routines</h3></a>
+</center>
+
+There are two routines
+<ul>
+<li> <a href="#fixed">doubleToStr()</a> Returns a string representing a type double value in fixed point
+notation. The fractional part is limited to 9 digits since that is the limit of a value of type double.
+<li> <a href="#sci">doubleToStrScientific()</a> Returns a string representing a type double value in
+scientific notation of the form: d.ffffexx. The fractional part is limited to 9 digits since that is the
+limit of a value of type double.
+</ul>
+Your application can choice which or these two routines is used based on the value of the double, usually the exponent.
+<p>The routines follow.
+<p>
+<a name="fixed">doubleToStr()</a>
+<pre>
+// Routine to convert double to string in fixed point notation.
+// This is limited to 9 fractional digits.  Type double has at most 9 significant digits.
+// Be sure that 'str' is dimensioned large enough.
+// Optional use of MathLib -- see comments
+//
+void doubleToStr(CharPtr str, double flpNumber, Int numFractDigits)
+{ Long  longNumber;
+  double flpIP, zeros, round;
+  Int i, remainder, strLen;
+  Char sign = ' ';
+
+  if (numFractDigits &lt; 0 || numFractDigits &gt; 9)
+    FrmAlert(ALERTID_ERROR);
+
+  if (flpNumber &lt; 0.0)
+    { flpNumber = -flpNumber;
+      sign = '-';
+    }
+
+// With MathLib
+// zeros = pow(10, numFractDigits);			// get the rounding constant
+
+// Without MathLib -- this could also be done with an array 1.0, 10.0, 100.0 etc.
+  zeros = 1.0;
+  for (i=0; i&lt;numFractDigits; i++)
+     zeros *= 10;
+
+  round = 0.5/zeros;
+
+// With Mathlib
+// flpNumber = modf(flpNumber+round, &amp;flpIP);		// get integer and fractional parts
+
+// Without MathLib
+  flpNumber += round;
+  flpIP = (int) flpNumber;
+  flpNumber = flpNumber - flpIP;
+
+  str[0] = sign;
+  StrIToA(&amp;str[1], (Long) flpIP);
+  strLen = StrLen(str);					// put in the decimal point and terminate the string
+  str[strLen] = '.';
+  str[numFractDigits+strLen+1] = '\0';
+
+  longNumber = flpNumber * zeros;			// fractional part
+
+  for (i=numFractDigits+strLen; i&gt;strLen; i--)		// convert the integer part
+    { remainder = longNumber % 10;
+      str[i] = remainder + 0x30;
+      longNumber /= 10;
+    }
+}
+</pre>
+
+<p><br>
+The end of doubleToStr()<a href="#top"><img src="top.gif" align=right border=0></a>
+<p><br>
+
+<a name="sci">doubleToStrScientific()</a>
+<pre>
+// Routine to convert double to string in scientific notation.
+// This is limited to 9 fractional digits.  Requires MathLib.
+// Be sure that 'str' is dimensioned large enough it could require 17 characters
+//
+void doubleToStrScientific(CharPtr str, double flpNumber, Int numFractDigits)
+{ Long  longNumber;
+  double flpIP, adjFlpNumber, zeros, round;
+  Int i, remainder, exponent, ePos;
+  Char sign = ' ';
+
+  if (numFractDigits < 0 || numFractDigits &gt; 9)
+    FrmAlert(ALERTID_ERROR);
+
+  if (flpNumber &lt; 0.0)
+    { flpNumber = -flpNumber;
+      sign = '-';
+    }
+
+  zeros = pow(10, numFractDigits);			// get the rounding constant -- using MathLib
+  round = 0.5/zeros;
+
+  exponent = log10(flpNumber);
+  adjFlpNumber = flpNumber/pow(10, exponent);
+  adjFlpNumber = modf(adjFlpNumber+round, &amp;flpIP);	// get integer and fractional parts
+
+  str[0] = sign;
+  str[1] = flpIP+'0';					// always a single digit
+  str[2] = '.';
+  ePos = numFractDigits+3;
+
+  longNumber = adjFlpNumber * zeros;			// fractional part
+  for (i=numFractDigits+2; i&gt;2; i--)			// convert the integer part
+    { remainder = longNumber % 10;
+      str[i] = remainder + 0x30;
+      longNumber /= 10;
+    }
+  str[ePos] = 'e';					// now the exponent
+  StrIToA(&amp;str[ePos+1], (Long) exponent);
+}
+</pre>
+End of doubleToStrScientific() <a href="#top"><img src="top.gif" align=right border=0></a>
+
+<center>
+<p><br><a href="index.html">
+<h4><img src="back.gif" border=0 align=center alt="Back Icon">To the Bray Palm Handheld Page</h4></a>
+</center>
+</body>
+</html>

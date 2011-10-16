@@ -1,0 +1,111 @@
+#include "FloatLib.h"
+//#include "MathLib.c"
+// Defined Routines
+
+void	*
+	getObjectPtr (FormPtr frmP, Int resourceNo)
+	{
+		UInt16 objIndex=FrmGetObjectIndex(frmP,resourceNo);
+		return FrmGetObjectPtr(frmP,objIndex);
+	}
+
+
+// Use a function like this to set a field to a string
+
+		static void 
+	setFieldText	(UInt32	fIndex, 
+			 char	*StrToShow)
+	{
+		FormPtr frmP	= FrmGetActiveForm();
+		void	*fieldP = getObjectPtr (frmP, fIndex);
+
+		// get the field's old text handle
+		Handle	oldH	= FldGetTextHandle(fieldP);
+		
+		//Copy our string into a memhandle
+
+		int	len	= StrLen(StrToShow);
+		Handle	mH	= MemHandleNew(len+1);
+		char	*mP	= MemHandleLock(mH);
+
+		StrCopy(mP, StrToShow);
+		
+		//The memhandle needs to be unlocked to work...
+		MemHandleUnlock(mH);
+
+		//To establish the field's link to the handle
+		FldSetTextHandle(fieldP,mH);
+
+		//To draw the field
+		FldDrawField(fieldP);
+		
+		// get rid of old handle
+		if (oldH != NULL)
+			MemHandleFree (oldH);
+	}
+
+// Use a function like this to find out what the field's contents 
+	// are and to put them into a string:
+
+		static void 
+	getFieldText (UInt32 fIndex, char *StrToGet)
+	{
+		FormPtr	frmP = FrmGetActiveForm();
+		void	*fieldP = getObjectPtr (frmP, fIndex);
+
+		Handle mH = FldGetTextHandle(fieldP);
+		char *mP=MemHandleLock(mH);
+		StrCopy(StrToGet, mP);
+		
+		MemHandleUnlock(mH);
+	}
+
+//To pass from int from Scient. to normal notation
+
+void floatToStr(CharPtr str, float flpNumber, Int numFractDigits)
+
+{ Long  longNumber;
+  double flpIP, zeros, round;
+  Int i, remainder, strLen;
+  Char sign = ' ';
+
+  if (numFractDigits < 0 || numFractDigits > 9)
+    //FrmAlert(ALERTID_ERROR);
+
+  if (flpNumber < 0.0)
+    { flpNumber = -flpNumber;
+      sign = '-';
+    }
+
+// With MathLib
+// zeros = pow(10, numFractDigits);			// get the rounding constant
+
+// Without MathLib -- this could also be done with an array 1.0, 10.0, 100.0 etc.
+  zeros = 1.0;
+  for (i=0; i<numFractDigits; i++)
+     zeros *= 10;
+
+  round = 0.5/zeros;
+
+// With Mathlib
+// flpNumber = modf(flpNumber+round, &flpIP);		// get integer and fractional parts
+
+// Without MathLib
+  flpNumber += round;
+  flpIP = (Long) flpNumber;
+  flpNumber = flpNumber - flpIP;
+
+  str[0] = sign;
+  StrIToA(&str[1], (Long) flpIP);
+  strLen = StrLen(str);					// put in the decimal point and terminate the string
+  str[strLen] = ',';
+  str[numFractDigits+strLen+1] = '\0';
+
+  longNumber = flpNumber * zeros;			// fractional part
+
+  for (i=numFractDigits+strLen; i>strLen; i--)		// convert the integer part
+    { remainder = longNumber % 10;
+      str[i] = remainder + 0x30;
+      longNumber /= 10;
+    }
+}

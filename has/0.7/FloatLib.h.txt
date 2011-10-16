@@ -1,0 +1,8 @@
+#include "MathLib.h.c"
+static void setFieldText (UInt32 fIndex, char *StrToShow);
+	void	*getObjectPtr (FormPtr frmP, Int resourceNo);
+	static Boolean	doMenu(FormPtr frmP, Word command);
+	static void getFieldText (UInt32 fIndex, char *StrToGet);
+	static void	nullField (UInt32 fIndex);
+	void floatToStr(CharPtr str, float flpNumber, Int numFractDigits);
+	//void floatToStrScientific(CharPtr str, float flpNumber, Int numFractDigits);

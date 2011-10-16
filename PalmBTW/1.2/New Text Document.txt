@@ -1,0 +1,17 @@
+// store numbers using US conventions.  
+Char *jackpot = "20,000,000.00"; 
+Char thou; // thousand separator 
+Char dp; // decimal separator 
+  
+// Retrieve user's preferred number format.  
+LocGetNumberSeparators((NumberFormatType) 
+   PrefGetPreference(prefNumberFormat), &thou,  
+      &dp); 
+// Localize jackpot number. Converts "," to thou  
+// and "." to dp.  
+StrLocalizeNumber(jackpot, thou, dp); 
+// Display string.  
+// Assume inputString is a number user entered,  
+// convert it to US conventions this way. Converts  
+// thou to "," and dp to "." 
+StrDelocalizeNumber(inputNumber, thou, dp); 

@@ -1,0 +1,12 @@
+Must Include:
+
+Convert.Rsrc
+ConvertLib.c
+Convert.c
+
+
+present in the Palm:
+
+MathLib.h.c
+MathLib.c
+Convert.h

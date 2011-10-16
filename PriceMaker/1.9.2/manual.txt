@@ -1,0 +1,18 @@
+The program calculates profits on wholesale or wholesale plus taxes or retail prices. It also calulates taxes and discounts, if it applies. In this case, the program calculates the discounted retail price ("Disc. price"), the margin of profit on the discounted price ("Disc. profit") and the total tax amount for the discounted price ("Tax disc. price").
+
+Taxes, profits and discount percentages can be input by either selecting the drop-down menus, or by manually typing the percentage. 
+ 
+Different types of calculation can be set in the preference panel, which can be accessed from the option -> preference menu:
+
+1) currency: 
+The currency sign used can be selected from: dollars, euros, pounds, yen.
+
+2) Profit on: 
+a) Wholesale: if this is selected, the margin of profit is calculated on the wholesale price. This margin is calculated starting from the price input by the user (it can be either in the wholesale or in the final retail field).
+b) Retail: if this is selected, the margin of profit is calculated on the retail price. This margin is calculated starting from the price input by the user (it can be either in the wholesale or in the final retail field).
+
+3) Disc. profit: the value of the profit from the discounted price can be either displayed as the actual "amount" or in percentage. 
+
+4) Retail price: with this option, the retail price is calculated (or used for the calculation of the wholesale price) either before (BT) or after taxes.
+
+By selecting the proper tax percentage, the program calculates the tax amounts for: the wholesale price ("Tax credit"), the profit ("Tax profit") and the total final price ("Tax"). 

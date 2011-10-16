@@ -1,0 +1,746 @@
+#define appCreator 'NFEC'
+#define appPrefID 1
+#define appPrefVersion 1
+
+#include "FloatLib.h"
+	#define MainForm		1000
+	
+#define AboutForm 1100
+#define LicenseForm	1150
+	#define FromField 1300
+	#define ToField 1400
+	#define FromFieldLab 1310
+	#define ToFieldLab 1410
+	#define FromFieldCur 1320
+	#define ToFieldCur 1420
+	#define FromList 1101
+	#define ToList 1201
+	#define FromPopUp 1102
+	#define ToPopUp 1202
+	#define ConvBtn	1500
+	#define ResetBtn 1600 
+	#define SwapBtn 1700
+	#define WarningAlert 2000
+	//#define NegativeNumbAlert 2100
+	#define OptionsMenuAbout 2000
+	#define listCountM 13
+	#define CloseAboutMenuBtn 1110
+	#define LicenseBtn 1112
+	#define LicenseCloseBtn 1160
+	#define LicenseField 1170
+	// *** PUT UI-DEFINITIONS HERE *** //
+	
+typedef enum { 
+  nfCommaPeriod, 
+  nfPeriodComma, 
+  nfSpaceComma, 
+  nfApostrophePeriod, 
+  nfApostropheComma 
+} NumberFormatType;
+
+
+	// Prototypes
+	int a,d,i, rF, rT,rt, rf, l;
+	double g,h,FromFl, ToFl, c,b,k,TempTo, TempFrom;
+	static char	From[150];
+	static char	To[150];
+	static char	From2[150];
+	static char	To2[150];
+	double conversion();	
+	double conversion2();	
+	double CurOrder(int i);
+
+	double MaxNumber=2000000000.0;	
+	Char thousandsSeparator, decimalSeparator; 
+
+	//void initMath();
+	static Boolean	appHandleEvent (EventPtr event);
+	static void	mainFormInit (FormPtr form);
+	static Boolean	mainFormEventHandler (EventPtr event);
+	static void	AboutFormInit (FormPtr form);
+	static Boolean	AboutFormEventHandler (EventPtr event);
+	static void	LicenseFormInit (FormPtr form);
+	static Boolean	LicenseFormEventHandler (EventPtr event);
+//list handling prototypes
+	void LstDrawList (ListType *listP) SYS_TRAP(sysTrapLstDrawList);
+	void LstSetDrawFunction (ListType *listP, ListDrawDataFuncPtr func) 
+		SYS_TRAP(sysTrapLstSetDrawFunction);
+	void WinDrawTruncChars (Char *c, int i, int x, int y, int w)
+		SYS_TRAP(sysTrapWinDrawTruncChars);	
+	//void termMath();
+	NumberFormatType numFormat; 
+	
+typedef struct { 
+int FromType;    	
+int ToType;
+char FromC[80];
+char ToC[80];
+	} EuroConvPreferenceType; 
+	
+	EuroConvPreferenceType Prefs; 
+
+
+UInt32 PrefGetPreference(NumberFormatType prefNumberFormat)
+SYS_TRAP(sysTrapPrefGetPreference);
+void LocGetNumberSeparators (NumberFormatType prefnumberFormat, Char *thousandSeparator, Char *decimalSeparator)
+SYS_TRAP(sysTrapLocGetNumberSeparators);
+CharPtr StrDelocalizeNumber (CharPtr s, Char thousandSeparator, Char decimalSeparator)
+SYS_TRAP(sysTrapStrDelocalizeNumber);
+
+
+static char	*listFromM[listCountM]= {"Euro (EUR)","Austria - Shillings (ATS)","Belgium - Francs (BEF)","Finland - Markkas (FIM)",
+						"France - Francs (FRF)","Germany - Marks (DM)","Greece - Drachmas (GRD)","Ireland - Punts (IEP)",
+						"Italy - Liras (ITL)","Luxembourg - Francs (LUF)","Netherlands - Guilders (NLG)",
+						"Portugal - Escudos (PTE)","Spain - Pesetas (ESP)"};
+static char	*listM[listCountM]= {"EUR","ATS", "BEF","FIM","FRF","DM","GRD","IEP","ITL","LUF","NLG","PTE","ESP"};
+
+
+void	drawFromListM	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (listFromM[i], StrLen(listFromM[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListFromM(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, listCountM);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawFromListM);
+
+		// Don't redraw the list
+	}
+
+
+
+	/*
+	 * startApp and stopApp are here for future reference.  They clearly 
+	 * don't do anything for this program, but it's a good idea to do 
+	 * program clean-up and shutdown in these files.  One thing that 
+	 * typically goes here is database opening and closing.
+	 */
+
+	static void	startApp()	
+{UInt16 sizePrefs = sizeof( EuroConvPreferenceType );
+	Int16 rc;	
+	rc=PrefGetAppPreferences(appCreator, appPrefID,(void*)(&Prefs), &sizePrefs, true);
+		
+	rF=Prefs.FromType;
+	rT=Prefs.ToType;
+	StrCopy(From, Prefs.FromC);
+	StrCopy(To, Prefs.ToC);
+	if (rc == noPreferenceFound) 
+	{
+	rF = 0;
+	rT = 0;
+	StrCopy(From, "");
+	StrCopy(To, " 0,00");
+	}
+	return;}
+
+	static void	stopApp()	
+	{
+		
+	
+	Prefs.FromType = rF;
+	Prefs.ToType = rT;
+	StrCopy(Prefs.FromC, From);
+	StrCopy(Prefs.ToC, To);
+	PrefSetAppPreferences (appCreator, appPrefID,  appPrefVersion, &Prefs, sizeof (Prefs), true); 
+		return;}
+
+
+
+
+	/*
+	 * A Palm program starts at the PilotMain function -- you can use 
+	 * this example verbatim for most (maybe all) your Palm applications.  
+	 * Some other examples might separate the event loop into a separate 
+	 * function but we've combined the two, here.  This function does 
+	 * the following.
+	 *
+	 *	o  calls startApp, 
+	 *	o  initiates the first form, 
+	 *	o  handles the event loop, 
+	 *	o  cleans-up (when it gets the 'leaving now' event), and 
+	 *	o  leaves.
+	 */
+
+
+		DWord
+	PilotMain(Word cmd, char *cmdPBP, Word launchFlags)
+	{
+		EventType	event;
+		Word		error;
+		if (cmd == sysAppLaunchCmdNormalLaunch) 
+		{
+			startApp();
+			//initMath();
+			/*
+			 * FrmGotForm generates a frmLoadEvent that'll get 
+			 * handled as soon as we have an event handler that 
+			 * knows what to do with it.
+			 */
+
+			FrmGotoForm(MainForm);
+LocGetNumberSeparators((NumberFormatType) PrefGetPreference(nfSpaceComma) , &thousandsSeparator, &decimalSeparator); 
+			/*
+			 * This loop gets events, handles the events, and 
+			 * checks to see if we've got a 'done' event.
+			 */
+
+			do 
+			{
+				/*
+				 * Wait for an event (we already generated the 
+				 * first one).
+				 */
+
+				EvtGetEvent(&event, evtWaitForever);
+
+				/*
+				 * Then, ask the system, the menu system, 
+				 * and our *OWN* event handlers (one for the 
+				 * application as a whole and one for the 
+				 * current form) to deal with the event.
+				 */
+
+				if (!SysHandleEvent (&event))
+				if (!MenuHandleEvent (0, &event, &error))
+				if (!appHandleEvent (&event))
+					FrmDispatchEvent (&event);
+
+			} while (event.eType != appStopEvent);
+
+			/*
+			 * When we're done, shut down
+			 */
+			//termMath();	
+			stopApp();
+			FrmCloseAllForms();
+		}
+		return 0;
+	}
+
+	/*
+	 * This is the top-level event handler for the entire application.  
+	 * Here, we handle form load events and our menu events.
+	 */
+
+
+		static Boolean 
+	appHandleEvent (EventPtr event) 
+	{
+		FormPtr	frm;
+		Int	formId;
+		Boolean	handled = false;
+		
+		if (event->eType == frmLoadEvent) 
+		{
+			/*
+			* Load the resource for the form
+			*/
+
+			formId	= event->data.frmLoad.formID;
+			frm	= FrmInitForm(formId);
+
+			FrmSetActiveForm(frm);
+
+			/*
+			* install a form-specific event handler
+			*/
+
+			if (formId == MainForm)
+				FrmSetEventHandler (frm, mainFormEventHandler);
+			if (formId == AboutForm)
+				FrmSetEventHandler (frm, AboutFormEventHandler);
+			if (formId == LicenseForm)
+				FrmSetEventHandler (frm, LicenseFormEventHandler);
+			// *** ADD NEW FORM HANDLING HERE *** //
+			
+
+			handled = true;
+		}       
+		return handled;
+	}
+
+
+	/*
+	 * This is the event handler for the main form.  It handles all of 
+	 * the user interactions with the user interface objects (e.g., 
+	 * buttons, lists, text fields, and such) on the main form.
+	 */
+
+
+		static Boolean
+	mainFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			mainFormInit(frmP);
+			handled = true;
+			break;  
+		case menuEvent:
+			handled=doMenu(frmP, event->data.menu.itemID);
+			break;
+
+		case fldEnterEvent:
+                   switch(event->data.fldEnter.fieldID)
+			{	
+			case FromField:
+			{
+			setFieldText (FromField, "");
+			FrmSetFocus(frmP, FrmGetObjectIndex(frmP,FromField));
+			setFieldText (ToField, " 0,00");
+						
+			handled = true;
+			break;}}
+
+					// *** ADD EVENT HANDLING HERE *** //
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	ConvBtn:
+			{	
+				if(l==1)
+				{setFieldText (ToFieldCur, listFromM[rT]);
+				setFieldText(FromFieldCur, listFromM[rF]);
+				rt=rF;
+				rf=rT;
+				rF=rf;
+				rT=rt;
+				}
+
+				l=0;
+				setFieldText(FromFieldCur, listFromM[rF]);
+				setFieldText (ToFieldCur, listFromM[rT]);
+				
+												
+				conversion();
+				// Math calculation
+				
+			if(b>MaxNumber)	
+				{UInt16 alertSelection = FrmAlert(WarningAlert);
+				a=0;
+				setFieldText (FromField, " ");
+				setFieldText (ToField, " 0,00");
+				conversion();
+				handled = true;
+				break;
+				}			
+								
+				floatToStr(To, b, 2);
+				setFieldText (ToField, To);
+				if(a==0)
+				{setFieldText(FromFieldLab, From2);
+				setFieldText(ToFieldLab, To2);
+				}
+					if(a==1)
+				{setFieldText(FromFieldLab, To2);
+				setFieldText(ToFieldLab, From2);
+				a=0;}		
+
+				handled = true;
+				break;
+			}
+			
+			case	ResetBtn:
+			{
+				a=0;
+				setFieldText (FromField, " ");
+				setFieldText (ToField, " 0,00");
+				setFieldText (FromFieldLab, listM[0]);
+				setFieldText (ToFieldLab, listM[0]);
+				setFieldText(FromFieldCur, listFromM[0]);
+				setFieldText(ToFieldCur, listFromM[0]);
+
+				g=1.0;
+				h=1.0;
+				rF=0;
+				rT=0;
+				handled = true;
+				break;
+
+			}
+	
+	case	SwapBtn:
+			{
+				if(l==0)
+				{setFieldText (ToFieldCur, listFromM[rF]);
+				setFieldText(FromFieldCur, listFromM[rT]);
+				rf=rF;
+				rt=rT;
+				rF=rt;
+				rT=rf;
+				}
+									
+				l=1;
+				conversion2();
+				// Math calculation
+				//conversion();
+			
+			if(b>MaxNumber)	
+				{UInt16 alertSelection = FrmAlert(WarningAlert);
+				a=0;
+				setFieldText (FromField, " ");
+				setFieldText (ToField, " 0,00");
+				conversion();
+				handled = true;
+				break;
+				}
+								
+				floatToStr(To, b, 2);
+				setFieldText (ToField, To);
+				//200
+			
+				if(a==1)
+				{setFieldText(FromFieldLab, From2);
+				setFieldText(ToFieldLab, To2);
+				}
+				if(a==0)
+				{setFieldText(FromFieldLab, To2);
+				setFieldText(ToFieldLab, From2);
+				
+				a=1;}	
+				
+				handled = true;
+				break;
+			}
+
+
+	} 
+				break;
+
+//LISTS
+		case popSelectEvent:
+			{a=0;
+		i	= event->data.popSelect.selection;
+
+		switch (event->data.popSelect.controlID)
+		{
+		case FromPopUp:
+						
+			setFieldText(FromFieldLab, listM[i]);
+			setFieldText(FromFieldCur, listFromM[i]);
+			
+			g=CurOrder(i);
+
+			
+	rF=i;
+			conversion();
+				if(b>MaxNumber)	
+				{UInt16 alertSelection = FrmAlert(WarningAlert);
+				a=0;
+				setFieldText (FromField, " ");
+				setFieldText (ToField, " 0,00");
+				conversion();
+				handled = true;
+				break;
+				}			
+								
+				floatToStr(To, b, 2);
+				setFieldText (ToField, To);
+				if(a==0)
+				{setFieldText(FromFieldLab, From2);
+				setFieldText(ToFieldLab, To2);
+				}
+				if(a==1)
+				{setFieldText(FromFieldLab, To2);
+				setFieldText(ToFieldLab, From2);
+				a=0;}		
+			handled = true;
+			break;
+		
+
+
+		case ToPopUp:
+			setFieldText(ToFieldLab, listM[i]);
+			setFieldText(ToFieldCur, listFromM[i]);
+			
+			h=CurOrder(i);
+
+	rT=i;
+				conversion();
+				if(b>MaxNumber)	
+				{UInt16 alertSelection = FrmAlert(WarningAlert);
+				a=0;
+				setFieldText (FromField, " ");
+				setFieldText (ToField, " 0,00");
+				conversion();
+				handled = true;
+				break;
+				}			
+								
+				floatToStr(To, b, 2);
+				setFieldText (ToField, To);
+				if(a==0)
+				{setFieldText(FromFieldLab, From2);
+				setFieldText(ToFieldLab, To2);
+				}
+					if(a==1)
+				{setFieldText(FromFieldLab, To2);
+				setFieldText(ToFieldLab, From2);
+				a=0;}		
+			handled = true;
+			break;
+			
+}
+
+//other buttons...
+
+
+			}
+
+
+		}
+		return handled;
+	}
+
+static Boolean
+	AboutFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			AboutFormInit(frmP);
+			handled = true;
+			break;  
+		
+		
+		// *** ADD EVENT HANDLING HERE *** //
+//BUTTONS
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	CloseAboutMenuBtn:
+			{	FrmGotoForm(MainForm);
+				handled = true;
+				break;
+			}
+			//other buttons...
+			case	LicenseBtn:
+			{	FrmGotoForm(LicenseForm);
+				handled = true;
+				break;
+			}
+			}
+			break;
+}
+return handled;
+}
+
+
+	/*
+	 * This is the startup code for the form.  Here, we write our message 
+	 * to the screen.
+	 */
+
+		static void 
+	mainFormInit (FormPtr frmP)
+	{
+		//static char	foo[10]	= "Hello GUI";
+		
+		//WinDrawChars (foo,StrLen(foo),20,18);
+		setFieldText (FromField, From);
+		setFieldText (ToField, To);
+		setFieldText(FromFieldLab, listM[rF]);
+		setFieldText (ToFieldLab, listM[rT]);
+		setFieldText(FromFieldCur, listFromM[rF]);
+		setFieldText (ToFieldCur, listFromM[rT]);		
+
+		setupListFromM(FromList);
+		setupListFromM(ToList);
+		g=CurOrder(rF);
+		h=CurOrder(rT);
+		a=0;
+		l==0;
+
+
+		// *** ADD FORM INITIALIZATION HERE *** //
+		
+	}
+
+static void 
+	AboutFormInit (FormPtr frmP)
+	{//setupListM(ConstantList);
+	
+	//setFieldText(ConstValueField, " ");
+		
+		// *** ADD FORM INITIALIZATION HERE *** //
+		
+	}
+
+static void 
+	LicenseFormInit (FormPtr frmP)
+	{
+		
+		MemHandle t=DmGetResource('tSTR', 2000);
+
+
+    static Char    *foo    = (static Char *) MemHandleLock(t);
+   
+setFieldText(LicenseField, foo);
+
+    //MemHandleUnlock (t);
+    DmReleaseResource(t);
+		
+	}
+
+static Boolean
+	LicenseFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			LicenseFormInit(frmP);
+			handled = true;
+			break;  
+		
+		
+		// *** ADD EVENT HANDLING HERE *** //
+//BUTTONS
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	LicenseCloseBtn:
+			{	FrmGotoForm(AboutForm);
+				handled = true;
+				break;
+			}
+			//other buttons...
+			
+			}
+			break;
+}
+return handled;
+}
+//*************************************************************************
+//  Routines necessary for MathLib
+//**************************************************************************
+
+/*
+void initMath() {
+Err err;
+err = SysLibFind("MathLib", &MathLibRef);
+if (err != 0) { // library not loaded already
+    err = SysLibLoad('libr', 'MthL', &MathLibRef);
+    if (err == 0)
+        err = MathLibOpen (MathLibRef, 1);
+    }
+}
+void termMath() {
+if (MathLibRef != -1) {
+    Err err;
+    UInt usecount;
+    err = MathLibClose (MathLibRef, &usecount);
+    if (usecount == 0)
+        SysLibRemove (MathLibRef);
+    }
+}
+*/
+
+//*************************************************************************
+static Boolean	doMenu(FormPtr frmP, Word command)
+{
+	Boolean handled = false;
+	switch (command) {
+			case OptionsMenuAbout:
+			getFieldText (FromField, From);
+			getFieldText (ToField, To);
+			FrmGotoForm(AboutForm);
+			handled = true;
+			break;
+			
+	}
+	return handled;
+}
+
+double conversion()
+{
+				getFieldText (FromFieldLab, From2);
+				getFieldText (ToFieldLab, To2);
+
+				getFieldText (FromField, From);
+				
+				FlpCompDouble FloatFrom;
+				FloatFrom.fd = FlpAToF(From);
+				FromFl = FloatFrom.d;
+				TempFrom=FromFl;
+				b=FromFl*(h/g);
+				TempTo=b;
+return b;
+}
+
+double conversion2()
+{
+				getFieldText (FromFieldLab, From2);
+				getFieldText (ToFieldLab, To2);
+				getFieldText (FromField, From);
+				FlpCompDouble FloatFrom;
+				FloatFrom.fd = FlpAToF(From);
+				FromFl = FloatFrom.d;
+				TempFrom=FromFl;
+				b=FromFl*(g/h);
+				TempTo=b;
+return b;
+}
+
+
+double CurOrder(int i)
+{double g;
+			if(i==0)
+			{g=1.0;}
+			if(i==1)
+			{g=13.7603;}
+			if(i==2)
+			{g=40.3399;}
+			if(i==3)
+			{g=5.94573;}
+			if(i==4)
+			{g=6.55957;}
+			if(i==5)
+			{g=1.95583;}
+			if(i==6)
+			{g=340.750;}
+			if(i==7)
+			{g=0.787564;}
+			if(i==8)
+			{g=1936.27;}
+			if(i==9)
+			{g=40.3399;}
+			if(i==10)
+			{g=2.20371;}
+			if(i==11)
+			{g=200.482;}
+			if(i==12)
+			{g=166.386;}
+return g;
+
+}

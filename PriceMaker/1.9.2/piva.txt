@@ -1,0 +1,19 @@
+Caro Roberto,
+
+ti prego di scusarmi per il ritardo con cui ti scrivo. Ho discusso a lungo del problema ed eccone le conclusioni.
+
+Il tuo approccio e' assolutamente corretto sotto tutti i punti di vista. Infatti e' molto usato sopratutto per l'immediatezza e la semplicita'. Tuttavia molti commercialisti consigliano il metodo da me usato, anch'esso formalmente corretto. Ti chiederai a questo punto come si possano conciliare le due procedure. Con il metodo da te proposto il margine viene calcolato sul prezzo di magazzino. Quindi il 30% viene calcolato sul tuo prezzo iniziale 100. Con il mio metodo il margine viene calcolato sul prezzo finale di vendita. Quindi i due margini in realta' corrispondono a quantita' diverse. Il motivo per cui mi e' stato consigliato il mio metodo (e sembra che anche i commercialisti consiglino), sta nel fatto che calcolando il margine sul prezzo finale di vendita, sia poi piu' facile applicare gli sconti, sapendo quale sia il guadagno in questo caso. Cio' e' di immediata applicazione con il mio metodo, non altrettanto col tuo. Ecco l'esempio. Con il mio metodo:
+
+ingrosso: 100; margine sul prezzo di vendita 30%: 42.86; iva sul totale 20%: 28.57; totale: 171.43
+Togliendo l'IVa sul prezzo finale, rimane 142.86. Ora se tu applichi il 25% di sconto sul prezzo totale (35.71) a te rimane il guadagno del 5% (7.14) sempre sul prezzo finale di vendita prima dell'IVA.
+
+Seguendo il tuo metodo: ingrosso: 100; margine sul prezzo di magazzino 30%: 30; iva sul totale 20%: 26; totale: 156
+Togliendo l'IVa sul prezzo finale, rimane 130. Ora se tu applichi il 25% di sconto sul prezzo totale (32.5) a te non rimane il guadagno del 5% ma anzi shendi al di sotto del tuo prezzo di magazzino.
+
+In ogni caso ho quasi completato la versione di PalmIVA 2.0. In questa versione sia il tuo metodo che il mio sono presenti e selezionabili a discrezione dell'utente. Sto approntando le ultime modifiche estetiche, dopodiche verra' pubblicato. Ti faro' sapere quando questa versione sara' disponibile.
+
+Grazie ancora per la stimolante discussione.
+
+Cordialmente,
+Nicola
+

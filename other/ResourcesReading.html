@@ -1,0 +1,51 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+<head>
+	<title>CodeWarriorU Palm OS Programming Course :: Lesson 9</title>
+	<link rel="stylesheet" type="text/css" href="coursestyle.css">
+</head>
+
+<body>
+<h4>Lesson 9: Introduction to Databases</h4>
+<hr>
+<center><a href="cwu08-01.html"><-Previous lesson</a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;<a href="course.html#TOC">Table of Contents</a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;<a href="cwu10-01.html">Next lesson-></a></center>
+<hr>
+<h2>Resource Databases</h2>
+<font face="Arial, Helvetica, sans-serif" size=2 color=>
+
+										<p>Resource databases store data that is accessed in a random order. Applications use resource databases implicitly, of course, since an application is stored in a resource database. You're more likely to use record databases to store information, but you should know the basics of how to use a resource database as well. Complete details can be found starting on page 185 of  <i>Palm Database Programming.</i> </p>
+<p><b><font size=+1>Reading Resources</font></b></p>
+<p>Resources are read using the  <b>DmGetResource</b>  or  <b>DmGet1Resource</b> functions. Both functions take a resource type and a resource identifier as arguments. No reference to an open database is required: the system automatically tracks which resource databases an application has opened, starting with the application itself. DmGet1Resource searches the most recently opened database while DmGetResource searches all open databases. Both return a handle to the resource, or NULL if the resource was not found. For example, here's the code to get a string resource:</p>
+<blockquote><xmp>MemHandle h = DmGetResource( 'tSTR', 1000 );</xmp></blockquote>
+<blockquote><xmp>const Char *str = (const Char *) MemHandleLock( h );</xmp></blockquote>
+<p>Resource types are four-character identifiers, just like creator IDs and database types. System-defined resources have names like 'tSTR' (string) and 'tFRM' (form). You can obtian the code for a particular resource by looking at the list defined in the  <b>&lt;UIResources.h&gt;</b> header file.</p>
+<p>When you're done reading a resource, don't forget to unlock the handle and then release it with  <b>DmReleaseResource:</b> </p>
+<blockquote><xmp>MemHandleUnlock( h );</xmp></blockquote>
+<blockquote><xmp>DmReleaseResource( h );</xmp></blockquote>
+<p>To read resources from a specific database, open the database and use  <b>DmFindResource</b>  to obtain the resource handle.</p>
+<p><b><font size=+1>Writing Resources</font></b></p>
+<p>It's rare to write a resource out, but if you want to this is the code to use:</p>
+<blockquote><xmp>struct MyResource {</xmp></blockquote>
+<blockquote><xmp>    UInt16 myData;</xmp></blockquote>
+<blockquote><xmp>};</xmp></blockquote>
+<blockquote><xmp>MyResource foo;</xmp></blockquote>
+<blockquote><xmp>foo.myData = 1;</xmp></blockquote>
+<blockquote><xmp>MemHandle h = DmNewResource( dbRef, 'MYRS', 1000, sizeof( foo ) );</xmp></blockquote>
+<blockquote><xmp>void *data = MemHandleLock( h );</xmp></blockquote>
+<blockquote><xmp>DmWrite( data, 0, &foo, sizeof( foo ) );</xmp></blockquote>
+<blockquote><xmp>MemHandleUnlock( h );</xmp></blockquote>
+<blockquote><xmp>DmReleaseResource( h );</xmp></blockquote>
+<p>Remember that all writes to storage memory must be done using system functions like DmWrite!</p>
+<blockquote style="background-color:#f0f0d0;border-style:solid;border-width:1px;padding-left:10px;padding-right:10px">
+<font face="Arial, Helvetica, sans-serif" size=2 color=#660000><p><b>Use Resources for Localization</b></p>
+<p>If you plan on  <b>localizing</b> your application -- translating its text to another language -- then storing your strings as resources makes it easier to do this. Constructor can create resources for individual strings or for lists of strings. You can then give the Constructor resource file to someone else for translation to another language -- not just the strings, but the user interface resources -- and incorporate those resources into a localized version of the application.</p>
+</font></blockquote>
+<hr>
+<p align="center"><a href="cwu09-02.html"><-Previous</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="cwu09-01.html">1</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="cwu09-02.html">2</a>&nbsp;&nbsp;&nbsp;&nbsp;<strong>3</strong>&nbsp;&nbsp;&nbsp;&nbsp;<a href="cwu09-04.html">4</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="cwu09-05.html">5</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="cwu09-04.html">Next-></a></p>
+</font>
+<hr>
+<center><a href="cwu08-01.html"><-Previous lesson</a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;<a href="course.html#TOC">Table of Contents</a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;<a href="cwu10-01.html">Next lesson-></a></center>
+<hr>
+</body>
+</html>

@@ -1,0 +1,821 @@
+#define appCreator 'P1Ln'
+#define appPrefID 1
+#define appPrefVersion 1
+#include "FloatLib.h"
+	#define MainForm		1000
+	#define AboutForm 1100
+	#define LicenseForm	1150
+	#define ManualForm	1250
+	#define AmountField 1300
+	#define TipField 1450
+	#define TotalTipField 1400
+	#define TotalField 1350
+	#define TotPerPersField 1360
+	#define YearsField 1650
+	#define YearsList 1670
+	#define YearsPopUp 1660
+	#define MonthList 1690
+	#define MonthPopUp 1680
+	#define MonthlyLabel 1370
+
+	#define TipPercList 1101
+	#define TipPerPopUp 1102
+	#define ConvBtn	1500
+	//#define ResetBtn 1750
+	#define AboutAlert 2000
+	#define ManualMenuAbout 3000
+	#define WarningAlert 2200
+	#define OptionsMenuAbout 2000
+	#define listM 59
+	#define listMQ 4
+	#define CloseAboutMenuBtn 1110
+	#define LicenseBtn 1112
+	#define LicenseCloseBtn 1160
+	#define LicenseField 1170
+	#define ManualCloseBtn 1260
+	#define ManualField 1270
+	#define ResetMenu 3100
+		// Prototypes
+
+	int a,d,z, FormCheck;
+	Int32 Num;
+	static char	AmountChar[150];
+	//static char	YearsChar[150];
+	static char	TipChar[150];
+	static char	TotPerPersChar[150];
+	//static char	TipChar2[150];
+	static char	TotalChar[150];
+
+	double AmountFl, g,b,c, TotalFl, YearsFl, TotPerPersFl,TipFl, y, mq;
+	double MaxNumber=2000000000.0;	
+		double conversion();
+		void display();
+	void initMath();  
+	
+
+	static Boolean	appHandleEvent (EventPtr event);
+	static void	mainFormInit (FormPtr form);
+	static Boolean	mainFormEventHandler (EventPtr event);
+	static void	AboutFormInit (FormPtr form);
+	static Boolean	AboutFormEventHandler (EventPtr event);
+	static Boolean	LicenseFormEventHandler (EventPtr event);
+	static void	LicenseFormInit (FormPtr form);
+	static Boolean	ManualFormEventHandler (EventPtr event);
+	static void	ManualFormInit (FormPtr form);		
+	void LstDrawList (ListType *listP) SYS_TRAP(sysTrapLstDrawList);
+	void LstSetDrawFunction (ListType *listP, ListDrawDataFuncPtr func) 
+		SYS_TRAP(sysTrapLstSetDrawFunction);
+	void WinDrawTruncChars (Char *c, int i, int x, int y, int w)
+		SYS_TRAP(sysTrapWinDrawTruncChars);	
+	void CtlSetLabel (ControlType *controlP,const Char *newLabel)
+		SYS_TRAP(sysTrapCtlSetLabel);
+
+	static void MaxNumberCheck(void);
+	static void Reset(void);
+
+
+	void termMath();
+	typedef struct { 
+   	char Tip[150];
+	char Years[100];
+	int MQ;
+	} PalmLoanPreferenceType; 
+	
+	PalmLoanPreferenceType Prefs; 
+
+	
+	static char	*listPercM[listM]= {"1","2","3","4","5","6","7","8","9",
+						"10","11","12","13","14","15","16","17","18","19",
+						"20","21","22","23","24","25","26","27","28","29",
+						"30","31","32","33","34","35","36","37","38","39",
+						"40","41","42","43","44","45","46","47","48","49",
+						"50","55","60","65", "70","75", "80", "85", "90","95" };
+	
+	static char *listMonth[listMQ]={"Weeks:", "Bi-weeks:", "Months:", "Quarters:"};
+	static char *listMonth2[listMQ]={"Weekly:", "Bi-weekly:", "Monthly:", "Quarterly:"};
+
+	static double schedPay[4]={52.0,26.0,12.0, 3.0};
+
+void	drawTipListM	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (listPercM[i], StrLen(listPercM[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListTipM(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, listM);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawTipListM);
+
+		// Don't redraw the list
+	}
+
+void	drawMonthListM	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (listMonth[i], StrLen(listMonth[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListMonth(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, listMQ);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawMonthListM);
+
+		// Don't redraw the list
+	}
+
+	
+
+	/*
+	 * startApp and stopApp are here for future reference.  They clearly 
+	 * don't do anything for this program, but it's a good idea to do 
+	 * program clean-up and shutdown in these files.  One thing that 
+	 * typically goes here is database opening and closing.
+	 */
+
+	static void	startApp()	
+	{UInt16 sizePrefs = sizeof( PalmLoanPreferenceType );
+	Int16 rc;	
+	rc=PrefGetAppPreferences(appCreator, appPrefID,(void*)(&Prefs), &sizePrefs, true);
+	//StrCopy(TipChar2, Prefs.Tip);
+	
+	if (rc == noPreferenceFound) 
+	{StrCopy(Prefs.Tip, "5");
+	StrCopy(Prefs.Years, "15");
+	Prefs.MQ=2;}
+	return;}
+
+	static void	stopApp()	
+	{if(FormCheck==1)
+	{FrmGotoForm(MainForm);
+	break;}
+	
+	getFieldText(TipField, Prefs.Tip);
+	getFieldText(YearsField, Prefs.Years);
+	
+	PrefSetAppPreferences (appCreator, appPrefID,  appPrefVersion, &Prefs, sizeof (Prefs), true); 
+
+	return;}
+
+	/*
+	 * A Palm program starts at the PilotMain function -- you can use 
+	 * this example verbatim for most (maybe all) your Palm applications.  
+	 * Some other examples might separate the event loop into a separate 
+	 * function but we've combined the two, here.  This function does 
+	 * the following.
+	 *
+	 *	o  calls startApp, 
+	 *	o  initiates the first form, 
+	 *	o  handles the event loop, 
+	 *	o  cleans-up (when it gets the 'leaving now' event), and 
+	 *	o  leaves.
+	 */
+
+
+		DWord
+	PilotMain(Word cmd, char *cmdPBP, Word launchFlags)
+	{
+		EventType	event;
+		Word		error;
+		if (cmd == sysAppLaunchCmdNormalLaunch) 
+		{
+			startApp();
+			initMath();
+			/*
+			 * FrmGotForm generates a frmLoadEvent that'll get 
+			 * handled as soon as we have an event handler that 
+			 * knows what to do with it.
+			 */
+
+			FrmGotoForm(MainForm);
+
+			/*
+			 * This loop gets events, handles the events, and 
+			 * checks to see if we've got a 'done' event.
+			 */
+
+			do 
+			{
+				/*
+				 * Wait for an event (we already generated the 
+				 * first one).
+				 */
+
+				EvtGetEvent(&event, evtWaitForever);
+
+				/*
+				 * Then, ask the system, the menu system, 
+				 * and our *OWN* event handlers (one for the 
+				 * application as a whole and one for the 
+				 * current form) to deal with the event.
+				 */
+
+				if (!SysHandleEvent (&event))
+				if (!MenuHandleEvent (0, &event, &error))
+				if (!appHandleEvent (&event))
+					FrmDispatchEvent (&event);
+
+			} while (event.eType != appStopEvent);
+
+			/*
+			 * When we're done, shut down
+			 */
+			termMath();	
+			stopApp();
+			FrmCloseAllForms();
+		}
+		return 0;
+	}
+
+	/*
+	 * This is the top-level event handler for the entire application.  
+	 * Here, we handle form load events and our menu events.
+	 */
+
+
+		static Boolean 
+	appHandleEvent (EventPtr event) 
+	{
+		FormPtr	frm;
+		Int	formId;
+		Boolean	handled = false;
+		
+		if (event->eType == frmLoadEvent) 
+		{
+			/*
+			* Load the resource for the form
+			*/
+
+			formId	= event->data.frmLoad.formID;
+			frm	= FrmInitForm(formId);
+
+			FrmSetActiveForm(frm);
+
+			/*
+			* install a form-specific event handler
+			*/
+
+			if (formId == MainForm)
+				FrmSetEventHandler (frm, mainFormEventHandler);
+			if (formId == AboutForm)
+				FrmSetEventHandler (frm, AboutFormEventHandler);			
+			if (formId == LicenseForm)
+				FrmSetEventHandler (frm, LicenseFormEventHandler);
+			if (formId == ManualForm)
+				FrmSetEventHandler (frm, ManualFormEventHandler);
+			// *** ADD NEW FORM HANDLING HERE *** //
+			
+
+			handled = true;
+		}       
+		return handled;
+	}
+
+
+	/*
+	 * This is the event handler for the main form.  It handles all of 
+	 * the user interactions with the user interface objects (e.g., 
+	 * buttons, lists, text fields, and such) on the main form.
+	 */
+
+
+		static Boolean
+	mainFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			mainFormInit(frmP);
+			handled = true;
+			break;  
+		case menuEvent:
+			handled=doMenu(frmP, event->data.menu.itemID);
+			break;
+
+		case fldEnterEvent:
+                      	switch(event->data.fldEnter.fieldID)
+			{	
+			case YearsField:
+			{setFieldText (YearsField, "");
+			handled = true;
+			break;}
+
+			case AmountField:
+			{z=0;
+			setFieldText (AmountField, "");
+			FrmSetFocus(frmP, FrmGetObjectIndex(frmP, AmountField));
+			getFieldText (YearsField,Prefs.Years);
+			if (StrCompare(Prefs.Years, "")==0)
+			{setFieldText (YearsField, "1");}
+			setFieldText (TotalTipField, " 0.00");
+			setFieldText (TotalField, " 0.00");
+			setFieldText (TotPerPersField, " 0.00");
+			conversion();
+			display();
+			handled = true;
+			break;}
+			
+			case TipField:
+			{setFieldText (TipField, "");
+			FrmSetFocus(frmP, FrmGetObjectIndex(frmP, TipField));
+			handled = true;
+			break;}
+
+		
+			case TotalField:
+			{z=1;
+			getFieldText (YearsField,Prefs.Years);
+			if (StrCompare(Prefs.Years, "")==0)
+			{setFieldText (YearsField, "1");}
+			setFieldText (AmountField, " 0.00");
+			setFieldText (TotalTipField, " 0.00");
+			setFieldText (TotalField, "");
+			setFieldText (TotPerPersField, " 0.00");
+
+			FrmSetFocus(frmP, FrmGetObjectIndex(frmP, TotalField));
+			conversion();
+			display();
+			handled = true;
+			break;}
+			break;
+			}	
+		// *** ADD EVENT HANDLING HERE *** //
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	ConvBtn:
+			{
+				//add here
+				
+												
+				conversion();
+				
+				if(c>MaxNumber)	
+				{MaxNumberCheck();
+
+				handled = true;
+				break;
+				}	
+								
+				display();
+
+				handled = true;
+				break;
+			}
+						
+		/*
+			case ResetBtn:
+			{
+				Reset();
+
+			}
+		*/
+			}
+
+
+		break;
+
+//LISTS
+		case popSelectEvent:
+			{a=0;
+		int	i	= event->data.popSelect.selection;
+
+		switch (event->data.popSelect.controlID)
+		{
+		case TipPerPopUp:
+			{			
+			setFieldText(TipField, listPercM[i]);
+			
+			
+				conversion();
+				
+				if(c>MaxNumber)	
+				{MaxNumberCheck();
+				handled = true;
+				break;
+				}
+				
+				display();
+
+		
+
+			handled = true;
+			break;
+			
+			}
+
+
+			case YearsPopUp:
+				{
+				StrCopy(Prefs.Years, listPercM[i]);
+				setFieldText(YearsField, Prefs.Years);
+
+								
+				conversion();
+				
+				if(c>MaxNumber)	
+				{MaxNumberCheck();
+				handled = true;
+				break;
+				}
+				
+				display();
+				handled = true;
+				break;
+				}
+
+		case MonthPopUp:
+				{Prefs.MQ=i;
+
+		ControlType *ctlP;
+		ctlP = FrmGetObjectPtr( frmP, FrmGetObjectIndex(frmP, MonthPopUp));
+		CtlSetLabel (ctlP, listMonth[Prefs.MQ]);
+		setFieldText (MonthlyLabel, listMonth2[Prefs.MQ]);
+
+
+
+												
+				conversion();
+				
+				if(c>MaxNumber)	
+				{MaxNumberCheck();
+				handled = true;
+				break;
+				}
+				
+				display();
+				handled = true;
+				break;
+				}
+
+
+
+			}
+//other buttons...
+
+
+			}
+
+
+		}
+		return handled;
+	}
+
+	/*
+	 * This is the startup code for the form.  Here, we write our message 
+	 * to the screen.
+	 */
+
+		static void 
+	mainFormInit (FormPtr frmP)
+	{	
+		setFieldText (AmountField, "");
+		FrmSetFocus(frmP, FrmGetObjectIndex(frmP, AmountField));
+		
+		setFieldText (TotalField, " 0.00");
+		setFieldText (TotalTipField, " 0.00");
+		setFieldText (TotPerPersField, " 0.00");
+		setFieldText (YearsField, Prefs.Years);
+		setFieldText (TipField, Prefs.Tip);
+		
+
+		ControlType *ctlP;
+		ctlP = FrmGetObjectPtr( frmP, FrmGetObjectIndex(frmP, MonthPopUp));
+		CtlSetLabel (ctlP, listMonth[Prefs.MQ]);
+		setFieldText (MonthlyLabel, listMonth2[Prefs.MQ]);
+
+
+		setupListTipM(TipPercList);
+		setupListMonth(MonthList);
+
+		setupListTipM(YearsList);	
+		
+		z=0;
+		FormCheck=0;
+		
+		conversion();
+		display();
+		// *** ADD FORM INITIALIZATION HERE *** //
+		
+	}
+
+
+static void 
+	AboutFormInit (FormPtr frmP)
+	{
+		
+		// *** ADD FORM INITIALIZATION HERE *** //
+		
+	}
+
+static void 
+	LicenseFormInit (FormPtr frmP)
+	{
+		
+		MemHandle t=DmGetResource('tSTR', 2000);
+
+
+    static Char    *foo    = (static Char *) MemHandleLock(t);
+   
+setFieldText(LicenseField, foo);
+
+    //MemHandleUnlock (t);
+    DmReleaseResource(t);
+		
+	}
+
+static void 
+	ManualFormInit (FormPtr frmP)
+	{
+		
+		MemHandle t=DmGetResource('tSTR', 2100);
+
+
+    static Char    *foo    = (static Char *) MemHandleLock(t);
+   
+setFieldText(ManualField, foo);
+
+    //MemHandleUnlock (t);
+    DmReleaseResource(t);
+		
+	}
+
+
+static Boolean
+	AboutFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			AboutFormInit(frmP);
+			handled = true;
+			break;  
+		
+		
+		// *** ADD EVENT HANDLING HERE *** //
+//BUTTONS
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	CloseAboutMenuBtn:
+			{	FrmGotoForm(MainForm);
+				handled = true;
+				break;
+			}
+			//other buttons...
+			case	LicenseBtn:
+			{	FrmGotoForm(LicenseForm);
+				handled = true;
+				break;
+			}
+			}
+			break;
+}
+return handled;
+}
+
+
+static Boolean
+	LicenseFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			LicenseFormInit(frmP);
+			handled = true;
+			break;  
+		
+		
+		// *** ADD EVENT HANDLING HERE *** //
+//BUTTONS
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	LicenseCloseBtn:
+			{	FrmGotoForm(AboutForm);
+				handled = true;
+				break;
+			}
+			//other buttons...
+			
+			}
+			break;
+}
+return handled;
+}
+static Boolean
+	ManualFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			ManualFormInit(frmP);
+			handled = true;
+			break;  
+		
+		
+		// *** ADD EVENT HANDLING HERE *** //
+//BUTTONS
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	ManualCloseBtn:
+			{	FrmGotoForm(MainForm);
+				handled = true;
+				break;
+			}
+			//other buttons...
+			
+			}
+			break;
+}
+return handled;
+}
+//*************************************************************************
+//  Routines necessary for MathLib
+//**************************************************************************
+
+
+void initMath() {
+Err err;
+err = SysLibFind("MathLib", &MathLibRef);
+if (err != 0) { // library not loaded already
+    err = SysLibLoad('libr', 'MthL', &MathLibRef);
+    if (err == 0)
+        err = MathLibOpen (MathLibRef, 1);
+    }
+}
+void termMath() {
+if (MathLibRef != -1) {
+    Err err;
+    UInt usecount;
+    err = MathLibClose (MathLibRef, &usecount);
+    if (usecount == 0)
+        SysLibRemove (MathLibRef);
+    }
+}
+
+
+//*************************************************************************
+static Boolean	doMenu(FormPtr frmP, Word command)
+{
+	Boolean handled = false;
+	switch (command) {
+			case OptionsMenuAbout:
+			getFieldText(TipField, Prefs.Tip);
+			getFieldText(YearsField, Prefs.Years);
+			FrmGotoForm(AboutForm);
+			FormCheck=1;
+			handled = true;
+			break;
+			
+			case ManualMenuAbout:
+			getFieldText(TipField, Prefs.Tip);
+			getFieldText(YearsField, Prefs.Years);
+			FrmGotoForm(ManualForm);
+			FormCheck=1;
+			handled = true;
+			break;
+			
+			case ResetMenu:
+			Reset();
+			handled = true;
+			break;
+
+	}
+	return handled;
+}
+		
+	double conversion()
+			{
+				getFieldText (TipField,Prefs.Tip);
+				FlpCompDouble TipFloat;
+				TipFloat.fd = FlpAToF(Prefs.Tip);
+				TipFl = TipFloat.d;
+				g=TipFl;
+
+				getFieldText (YearsField,Prefs.Years);
+				FlpCompDouble YearsFloat;
+				YearsFloat.fd = FlpAToF(Prefs.Years);
+				YearsFl = YearsFloat.d;
+				
+				
+				b=YearsFl*schedPay[Prefs.MQ];
+
+				if(z==0)
+			
+				{getFieldText (AmountField,AmountChar);
+				FlpCompDouble AmountFloat;
+				AmountFloat.fd = FlpAToF(AmountChar);
+				AmountFl = AmountFloat.d;
+				
+				c=(AmountFl*g/(100*schedPay[Prefs.MQ]))/(1-(1/pow((1+g/(100*schedPay[Prefs.MQ])), b)));
+				y=c*b-AmountFl;
+				}
+				
+				if(z==1)
+				{
+				getFieldText (TotalField,TotalChar);
+				FlpCompDouble TotalFloat;
+				
+				TotalFloat.fd = FlpAToF(TotalChar);
+				TotalFl = TotalFloat.d;
+				
+				c=(TotalFl*(1-(1/pow(1+g/(100*schedPay[Prefs.MQ]), b))))/(g/(100*schedPay[Prefs.MQ]));
+				y=TotalFl*b-c;
+
+				}
+
+	return b;
+	}	
+
+	void display()
+	{			if(z==0)
+				{
+				StrIToA(TipChar, b);
+				floatToStr(TotalChar, c, 2);
+				floatToStr(TotPerPersChar, y, 2);
+				setFieldText (TotalTipField, TipChar);
+				setFieldText (TotalField, TotalChar);
+				setFieldText (TotPerPersField, TotPerPersChar);
+				
+				}
+
+				if(z==1)
+				{
+				StrIToA(TipChar, b);
+				floatToStr(AmountChar, c, 2);
+				floatToStr(TotPerPersChar, y, 2);
+				setFieldText (TotalTipField, TipChar);
+				setFieldText (AmountField, AmountChar);
+				setFieldText (TotPerPersField, TotPerPersChar);
+				}
+	
+
+					}
+
+static void MaxNumberCheck(void)
+
+{
+UInt16 alertSelection = FrmAlert(WarningAlert);
+				setFieldText (AmountField, "");
+				FrmSetFocus(FrmGetActiveForm(), FrmGetObjectIndex(FrmGetActiveForm(), AmountField));
+				setFieldText (TotalTipField, " 0.00");
+				setFieldText (TotalField, " 0.00");
+				setFieldText (TotPerPersField, " 0.00");
+				setFieldText (YearsField, Prefs.Years);
+}
+
+static void Reset(void)
+{
+setFieldText (AmountField, "");
+		FrmSetFocus(FrmGetActiveForm(), FrmGetObjectIndex(FrmGetActiveForm(), AmountField));
+		setFieldText (TotalField, " 0.00");
+		setFieldText (TipField, "5");
+		setFieldText (TotalTipField, " 0.00");
+		setFieldText (TotPerPersField, " 0.00");
+		setFieldText (YearsField, "15");
+		
+		z=0;
+		g=5.0;
+		conversion();
+		display();
+}

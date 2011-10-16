@@ -1,0 +1,14 @@
+The program allows the choice of calculating the margin of profit on the wholesale price or on the the retail price, by selecting the buttons on the upper right side.
+
+1) Wholesale: if this is selected, the margin of profit is calculated on the wholesale price. This margin is calculated starting from the price input by the user (it can be either in the wholesale or in the final retail field).
+
+2) Retail: if this is selected, the margin of profit is calculated on the retail price. This margin is calculated starting from the price input by the user (it can be either in the wholesale or in the final retail field).
+
+By selecting the proper tax percentage, the program calculates the tax amounts for: the wholesale price ("Tax credit"), the profit ("Tax profit") and the total final price ("Tax"). 
+
+A discount can be also be applied. The program calculates the discounted retail price ("Disc. price"), the margin of profit on the discounted price ("Disc. profit") and the total tax amount for the discounted price ("Tax disc. price").
+
+If the gain is negative, PriceMaker asks the user to reduce the discount percentage, until a positive profit is obtained. 
+
+The tax, the profit and the discount percentage can be input by either selecting the drop-down menus, or by manually typing the percentage. 
+ 

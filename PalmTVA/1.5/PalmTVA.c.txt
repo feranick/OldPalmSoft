@@ -1,0 +1,1095 @@
+#define appCreator 'ptva'
+#define appPrefID 2
+#define appPrefVersion 1
+	#include "FloatLib.h"
+	#define MainForm		1000
+	#define AboutForm 1100
+	#define LicenseForm	1150
+	#define ManualForm	1250
+	#define PrefForm	8200
+	#define AmountField 1300
+	#define TipField 1450
+	#define TotalTipField 1400
+	#define TotalField 1350
+	#define TotPerPersField 1360
+	
+	#define TipPercList 1101
+	#define TipPerPopUp 1102
+	#define CurrencyList 8211
+	#define CurrencyPopUp 8212
+	#define CurrField 8214
+	#define LowTipList 8311
+	#define LowTipPopUp 8312
+	#define LowTipField 8314
+	#define HighTipList 8411
+	#define HighTipPopUp 8412
+	#define HighTipField 8414
+	
+	//#define TipPersonField 1370
+
+	#define CurrField1 1810
+	#define CurrField2 1811
+	#define CurrField3 1812
+	#define CurrField4 1813
+	#define ConvBtn	1500
+	#define FifteenBtn 1600 
+	#define TwentyBtn 1700
+	#define ResetBtn 1750
+	#define AboutAlert 2000
+	#define ManualMenuAbout 3000
+	#define WarningAlert 2200
+	#define OptionsMenuAbout 2000
+	#define PreferencesMenu 8100
+	#define KeyboardMenu 9999
+	#define GraffitiMenu 9998
+	#define listM 63
+	#define listC 4
+	#define CloseAboutMenuBtn 1110
+	#define ClosePrefBtn 8210
+	#define ResetPrefBtn 8510
+	#define LicenseBtn 1112
+	#define LicenseCloseBtn 1160
+	#define LicenseField 1170
+	#define ManualCloseBtn 1260
+	#define ManualField 1270
+	// Prototypes
+
+	int a,d,z, FormCheck, PB;
+	Int32 Num;
+	static char	AmountChar[50];
+	static char	TipChar[50];
+	static char	TipChar2[50];
+	static char	TotalChar[50];
+	static char CurrChar[50];
+	static char LowTipChar[50];
+	static char LowTipChar2[50];
+	static char HighTipChar[50];
+	static char HighTipChar2[50];
+	static char TaxChar2[50];
+	static char Zero[20];
+	static char LowT[10];
+	static char HighT[10];
+	
+
+typedef enum { 
+  		nfCommaPeriod, 
+  		nfPeriodComma, 
+  		nfSpaceComma, 
+  		nfApostrophePeriod, 
+  		nfApostropheComma 
+		} NumberFormatType;
+
+	
+
+
+	double AmountFl, TotalFl, NumPeopleFl,TipFl, y, k, g,b,c,t;
+	double MaxNumber=2000000000.0;	
+		double conversion();
+		void display();
+	double TipConv(char test[50]);
+	static void ResetZeroField(int z);
+
+	static char localizedNum[50]; 
+
+	typedef enum 
+	{
+	kbdAlpha = 0, 
+	kbdNumbersAndPunc = 1, 
+	kbdAccent = 2,
+	kbdDefault = 0xff	
+	} KeyboardType;
+	
+	typedef enum 
+	{
+	referenceDefault = 0xff	
+	} ReferenceType;
+
+	//void initMath();  
+	
+	NumberFormatType numFormat; 
+	Char thSep,decSep ; 
+	
+	static Boolean	appHandleEvent (EventPtr event);
+	static void	mainFormInit (FormPtr form);
+	static Boolean	mainFormEventHandler (EventPtr event);
+	static void	AboutFormInit (FormPtr form);
+	static Boolean	AboutFormEventHandler (EventPtr event);
+	static Boolean	LicenseFormEventHandler (EventPtr event);
+	static void	LicenseFormInit (FormPtr form);
+	static Boolean	ManualFormEventHandler (EventPtr event);
+	static void	ManualFormInit (FormPtr form);
+	static void	PrefFormInit (FormPtr form);
+	static Boolean	PrefFormEventHandler (EventPtr event);
+	
+	static void CopyFields(void);
+	
+	static void MaxNumberCheck(void);
+	
+	static void FillTipField(void);
+	UInt32 PrefGetPreference(NumberFormatType prefNumberFormat)
+	SYS_TRAP(sysTrapPrefGetPreference);
+	void LocGetNumberSeparators (NumberFormatType prefnumberFormat, Char *thousandSeparator, Char *decimalSeparator)
+	SYS_TRAP(sysTrapLocGetNumberSeparators);
+	CharPtr StrDelocalizeNumber (CharPtr s, Char thousandSeparator, Char decimalSeparator)
+	SYS_TRAP(sysTrapStrDelocalizeNumber);
+	CharPtr StrLocalizeNumber (CharPtr s, Char thousandSeparator, Char decimalSeparator)
+	SYS_TRAP(sysTrapStrLocalizeNumber);
+
+
+
+	void LstDrawList (ListType *listP) SYS_TRAP(sysTrapLstDrawList);
+	void LstSetDrawFunction (ListType *listP, ListDrawDataFuncPtr func) 
+		SYS_TRAP(sysTrapLstSetDrawFunction);
+	void WinDrawTruncChars (Char *c, int i, int x, int y, int w)
+		SYS_TRAP(sysTrapWinDrawTruncChars);	
+	void CtlSetLabel (ControlType *controlP,const Char *newLabel)
+		SYS_TRAP(sysTrapCtlSetLabel);
+	void FrmHideObject (FormType *formP,UInt16 objIndex)
+		SYS_TRAP(sysTrapFrmHideObject);
+	void FrmShowObject (FormType *formP,UInt16 objIndex)
+		SYS_TRAP(sysTrapFrmShowObject);
+	void SysKeyboardDialog (KeyboardType kbd)
+		SYS_TRAP(sysTrapSysKeyboardDialog);
+	void SysGraffitiReferenceDialog (ReferenceType referenceType)
+		SYS_TRAP(sysTrapSysGraffitiReferenceDialog);
+	
+
+	//void termMath();
+	typedef struct {    	
+	char Tip[50];
+	char Curr[50];
+	char LowTip[50];
+	char HighTip[50];
+	} TipTapPreferenceType; 
+	
+	TipTapPreferenceType Prefs; 
+
+	
+	static char	*listPercM[listM]= {"1","2","2.5","3","4","5","5.5","6","7","8","8.5","9",
+						"10","11","12","13","14","15","16","17","18","19","19.6",
+						"20","21","22","23","24","25","26","27","28","29",
+						"30","31","32","33","34","35","36","37","38","39",
+						"40","41","42","43","44","45","46","47","48","49",
+						"50","55","60","65", "70","75", "80", "85", "90","95" };
+	
+	static char	*listCurr[listC]= {"€","$","£","¥"};
+
+
+void	drawTipListM	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (listPercM[i], StrLen(listPercM[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListTipM(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, listM);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawTipListM);
+
+		// Don't redraw the list
+	}
+
+void	drawListCurr	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (listCurr[i], StrLen(listCurr[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListCurr(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, listC);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawListCurr);
+
+		// Don't redraw the list
+	}
+
+	
+
+	/*
+	 * startApp and stopApp are here for future reference.  They clearly 
+	 * don't do anything for this program, but it's a good idea to do 
+	 * program clean-up and shutdown in these files.  One thing that 
+	 * typically goes here is database opening and closing.
+	 */
+
+	static void	startApp()	
+	{LocGetNumberSeparators((NumberFormatType) PrefGetPreference(nfSpaceComma) , &thSep, &decSep );
+	UInt16 sizePrefs = sizeof( TipTapPreferenceType );
+	Int16 rc;	
+	rc=PrefGetAppPreferences(appCreator, appPrefID,(void*)(&Prefs), &sizePrefs, true);
+	StrCopy(TipChar2, Prefs.Tip);
+	StrCopy(CurrChar, Prefs.Curr);
+	StrCopy(LowTipChar, Prefs.LowTip);
+	StrCopy(HighTipChar, Prefs.HighTip);
+
+	for(int e=0; e<listM; e++)
+	{StrLocalizeNumber(listPercM[e], thSep, decSep);} 
+	
+	if (rc == noPreferenceFound) 
+	{
+	StrCopy(TipChar2, "5.5");
+	StrCopy(CurrChar, "€");
+	StrCopy(LowTipChar, "5.5");
+	StrCopy(HighTipChar, "19.6");}
+	StrCopy(LowTipChar2, LowTipChar);
+	StrCat(LowTipChar2, "%");
+	StrCopy(HighTipChar2, HighTipChar);
+	StrCat(HighTipChar2, "%");
+	PB=0;
+	FormCheck=0;
+	return;}
+
+static void	stopApp()	
+	{if(FormCheck==1)
+	{FrmGotoForm(MainForm);
+	break;}
+	
+		getFieldText(TipField, TipChar2);
+		getFieldText(CurrField1, CurrChar);
+	
+	if(StrCompare(TipChar2, "")!=0)
+	{StrCopy(Prefs.Tip, StrDelocalizeNumber(TipChar2,  thSep,decSep ));}
+	
+	StrCopy(Prefs.Curr, CurrChar);
+	//StrCopy(Prefs.LowTip, StrDelocalizeNumber(LowTipChar,  thSep,decSep ));
+	//StrCopy(Prefs.HighTip, StrDelocalizeNumber(HighTipChar,  thSep,decSep ));
+
+	StrCopy(Prefs.LowTip, LowTipChar);
+	StrCopy(Prefs.HighTip, HighTipChar);
+	PrefSetAppPreferences (appCreator, appPrefID,  appPrefVersion, &Prefs, sizeof (Prefs), true); 
+
+	return;}
+
+	/*
+	 * A Palm program starts at the PilotMain function -- you can use 
+	 * this example verbatim for most (maybe all) your Palm applications.  
+	 * Some other examples might separate the event loop into a separate 
+	 * function but we've combined the two, here.  This function does 
+	 * the following.
+	 *
+	 *	o  calls startApp, 
+	 *	o  initiates the first form, 
+	 *	o  handles the event loop, 
+	 *	o  cleans-up (when it gets the 'leaving now' event), and 
+	 *	o  leaves.
+	 */
+
+
+		DWord
+	PilotMain(Word cmd, char *cmdPBP, Word launchFlags)
+	{
+		EventType	event;
+		Word		error;
+		if (cmd == sysAppLaunchCmdNormalLaunch) 
+		{
+			startApp();
+			//initMath();
+			/*
+			 * FrmGotForm generates a frmLoadEvent that'll get 
+			 * handled as soon as we have an event handler that 
+			 * knows what to do with it.
+			 */
+
+			FrmGotoForm(MainForm); 
+			/*
+			 * This loop gets events, handles the events, and 
+			 * checks to see if we've got a 'done' event.
+			 */
+
+			do 
+			{
+				/*
+				 * Wait for an event (we already generated the 
+				 * first one).
+				 */
+
+				EvtGetEvent(&event, evtWaitForever);
+
+				/*
+				 * Then, ask the system, the menu system, 
+				 * and our *OWN* event handlers (one for the 
+				 * application as a whole and one for the 
+				 * current form) to deal with the event.
+				 */
+
+				if (!SysHandleEvent (&event))
+				if (!MenuHandleEvent (0, &event, &error))
+				if (!appHandleEvent (&event))
+					FrmDispatchEvent (&event);
+
+			} while (event.eType != appStopEvent);
+
+			/*
+			 * When we're done, shut down
+			 */
+			//termMath();	
+			stopApp();
+			FrmCloseAllForms();
+		}
+		return 0;
+	}
+
+	/*
+	 * This is the top-level event handler for the entire application.  
+	 * Here, we handle form load events and our menu events.
+	 */
+
+
+		static Boolean 
+	appHandleEvent (EventPtr event) 
+	{
+		FormPtr	frm;
+		Int	formId;
+		Boolean	handled = false;
+		
+		if (event->eType == frmLoadEvent) 
+		{
+			/*
+			* Load the resource for the form
+			*/
+
+			formId	= event->data.frmLoad.formID;
+			frm	= FrmInitForm(formId);
+
+			FrmSetActiveForm(frm);
+
+			/*
+			* install a form-specific event handler
+			*/
+
+			if (formId == MainForm)
+				FrmSetEventHandler (frm, mainFormEventHandler);
+			if (formId == AboutForm)
+				FrmSetEventHandler (frm, AboutFormEventHandler);			
+			if (formId == LicenseForm)
+				FrmSetEventHandler (frm, LicenseFormEventHandler);
+			if (formId == ManualForm)
+				FrmSetEventHandler (frm, ManualFormEventHandler);
+			if (formId == PrefForm)
+				FrmSetEventHandler (frm, PrefFormEventHandler);
+
+			// *** ADD NEW FORM HANDLING HERE *** //
+			
+
+			handled = true;
+		}       
+		return handled;
+	}
+
+
+	/*
+	 * This is the event handler for the main form.  It handles all of 
+	 * the user interactions with the user interface objects (e.g., 
+	 * buttons, lists, text fields, and such) on the main form.
+	 */
+
+
+		static Boolean
+	mainFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			mainFormInit(frmP);
+			handled = true;
+			break;  
+		case menuEvent:
+			handled=doMenu(frmP, event->data.menu.itemID);
+			break;
+
+		case fldEnterEvent:
+                 switch(event->data.fldEnter.fieldID)
+			{	
+		
+		case AmountField:
+			{z=0;
+			//FillPeopleField();
+			FillTipField();
+
+			
+		setFieldText (AmountField, "");
+		
+		//setFieldText (TotalTipField, " 0.00");
+		//setFieldText (TotalField, " 0.00");
+		ResetZeroField(0);
+		
+	
+		FrmSetFocus(frmP, FrmGetObjectIndex(frmP, AmountField));
+
+			handled = true;
+			break;}
+
+
+	case TotalField:
+			{z=1;
+			FillTipField();
+			ResetZeroField(1);
+
+			setFieldText (TotalField, "");
+	
+			FrmSetFocus(frmP, FrmGetObjectIndex(frmP, TotalField));
+			handled = true;
+			break;}
+
+		case TipField:
+			{getFieldText (TipField,Prefs.Tip);
+			setFieldText (TipField, "");
+			FrmSetFocus(frmP, FrmGetObjectIndex(frmP, TipField));
+			handled = true;
+			break;}
+
+		
+		break;
+			}	
+		// *** ADD EVENT HANDLING HERE *** //
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	ConvBtn:
+			{
+				//add here
+											
+				conversion();
+				
+					if(c>MaxNumber)	
+						{
+						MaxNumberCheck();
+						handled = true;
+						break;
+						}	
+							
+				display();
+
+				handled = true;
+				break;
+			}
+			
+			case	FifteenBtn:
+				{setFieldText (TipField, StrLocalizeNumber(LowTipChar, thSep, decSep)); 
+				g=TipConv(LowTipChar);
+				//StrDelocalizeNumber(LowTipChar, thSep, decSep);
+
+				conversion();
+				
+
+					if(c>MaxNumber)	
+					{
+						MaxNumberCheck();
+						handled = true;
+						break;
+					}
+				
+								
+				display();
+								handled = true;
+				break;
+				
+				
+			}
+	
+			case	TwentyBtn:
+			{	setFieldText (TipField, StrLocalizeNumber(HighTipChar, thSep, decSep ));
+				g=TipConv(HighTipChar);
+				//StrDelocalizeNumber(HighTipChar, thSep, decSep );
+				conversion();
+				
+					if(c>MaxNumber)	
+					{
+						MaxNumberCheck();
+						handled = true;
+						break;
+					}
+											
+				display();
+			
+				handled = true;
+				break;
+				}
+
+			
+			case ResetBtn:
+			{ResetZeroField(0);
+		setFieldText (AmountField, "");
+		FrmSetFocus(frmP, FrmGetObjectIndex(frmP, AmountField));
+		//setFieldText (TotalField, " 0.00");
+		//setFieldText (TotalTipField, " 0.00");
+		
+		
+		setupListTipM(TipPercList);
+		
+		z=0;
+		}
+
+	}
+
+
+		break;
+
+//LISTS
+		case popSelectEvent:
+			{a=0;
+		int	i	= event->data.popSelect.selection;
+
+		switch (event->data.popSelect.controlID)
+		{
+		case TipPerPopUp:
+						
+			{setFieldText(TipField, listPercM[i]);
+			
+				conversion();
+				
+					if(c>MaxNumber)	
+					{MaxNumberCheck();
+					handled = true;
+					break;
+					}
+				
+				display();
+
+			handled = true;
+			break;}
+			
+}
+//other buttons...
+
+
+			}
+
+
+		}
+		return handled;
+	}
+
+	/*
+	 * This is the startup code for the form.  Here, we write our message 
+	 * to the screen.
+	 */
+
+		static void 
+	mainFormInit (FormPtr frmP)
+	{	//setFieldText (TipField, TipChar2);
+		
+		setFieldText (TipField, StrLocalizeNumber(TipChar2,  thSep,decSep ));
+
+		setFieldText (CurrField1, CurrChar);
+		setFieldText (CurrField3, CurrChar);
+		setFieldText (CurrField4, CurrChar);
+		setupListTipM(TipPercList);
+				
+		z=0;
+		FormCheck=0;
+		getFieldText (TipField,TipChar2);
+		FlpCompDouble TipFloat;
+		TipFloat.fd = FlpAToF(StrDelocalizeNumber(TipChar2,  thSep,decSep ));
+		TipFl = TipFloat.d;
+		g=TipFl;
+		
+		ControlType *ctlP, *ctlP2;
+		ctlP = FrmGetObjectPtr( frmP, FrmGetObjectIndex( frmP, FifteenBtn ) );
+		ctlP2 = FrmGetObjectPtr( frmP, FrmGetObjectIndex( frmP, TwentyBtn ) );
+		StrLocalizeNumber(LowTipChar,  thSep,decSep );
+		StrLocalizeNumber(HighTipChar,  thSep,decSep );
+		
+	StrCopy(LowTipChar2, LowTipChar);
+	StrCat(LowTipChar2, "%");
+	StrCopy(HighTipChar2, HighTipChar);
+	StrCat(HighTipChar2, "%");
+
+
+		CtlSetLabel (ctlP, LowTipChar2);
+		CtlSetLabel (ctlP2,HighTipChar2);
+				
+
+	if(PB==1)
+		{		setFieldText (AmountField, AmountChar);
+		conversion();
+		display();
+		}
+	else
+		{setFieldText (AmountField, "");
+		FrmSetFocus(frmP, FrmGetObjectIndex(frmP, AmountField));
+		//setFieldText (TotalField, " 0.00");
+		//setFieldText (TotalTipField, " 0.00");
+		ResetZeroField(0);
+		
+		}
+		StrDelocalizeNumber(LowTipChar,  thSep,decSep );
+		StrDelocalizeNumber(HighTipChar,  thSep,decSep );
+
+		
+	}
+
+
+static void 
+	AboutFormInit (FormPtr frmP)
+	{
+		// *** ADD FORM INITIALIZATION HERE *** //
+		
+	}
+
+static void 
+	LicenseFormInit (FormPtr frmP)
+	{
+		
+		MemHandle t=DmGetResource('tSTR', 2000);
+
+
+    static Char    *foo    = (static Char *) MemHandleLock(t);
+   
+setFieldText(LicenseField, foo);
+
+    //MemHandleUnlock (t);
+    DmReleaseResource(t);
+		
+	}
+
+static void 
+	ManualFormInit (FormPtr frmP)
+	{
+		
+		MemHandle t=DmGetResource('tSTR', 2100);
+
+
+    static Char    *foo    = (static Char *) MemHandleLock(t);
+   
+setFieldText(ManualField, foo);
+
+    //MemHandleUnlock (t);
+    DmReleaseResource(t);
+		
+	}
+static void PrefFormInit (FormPtr frmP)
+	{
+	setupListCurr(CurrencyList);
+	setFieldText (CurrField, CurrChar);
+	setupListTipM(LowTipList);
+	setFieldText (LowTipField, StrLocalizeNumber(LowTipChar, thSep, decSep ));
+	setupListTipM(HighTipList);
+	setFieldText (HighTipField, StrLocalizeNumber(HighTipChar, thSep, decSep ));
+	}
+
+static Boolean
+	AboutFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			AboutFormInit(frmP);
+			handled = true;
+			break;  
+		
+		
+		// *** ADD EVENT HANDLING HERE *** //
+//BUTTONS
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	CloseAboutMenuBtn:
+			{	FrmGotoForm(MainForm);
+				handled = true;
+				break;
+			}
+			//other buttons...
+			case	LicenseBtn:
+			{	FrmGotoForm(LicenseForm);
+				handled = true;
+				break;
+			}
+			}
+			break;
+}
+return handled;
+}
+
+
+static Boolean
+	LicenseFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			LicenseFormInit(frmP);
+			handled = true;
+			break;  
+		
+		
+		// *** ADD EVENT HANDLING HERE *** //
+//BUTTONS
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	LicenseCloseBtn:
+			{	FrmGotoForm(AboutForm);
+				handled = true;
+				break;
+			}
+			//other buttons...
+			
+			}
+			break;
+}
+return handled;
+}
+
+
+static Boolean
+	ManualFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			ManualFormInit(frmP);
+			handled = true;
+			break;  
+		
+		
+		// *** ADD EVENT HANDLING HERE *** //
+//BUTTONS
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	ManualCloseBtn:
+			{	FrmGotoForm(MainForm);
+				handled = true;
+				break;
+			}
+			//other buttons...
+			
+			}
+			break;
+}
+return handled;
+}
+
+
+static Boolean
+	PrefFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			PrefFormInit(frmP);
+			handled = true;
+			break;  
+		
+	case fldEnterEvent:
+                      	switch(event->data.fldEnter.fieldID)
+			{	
+		case LowTipField:
+			{StrCopy(Prefs.LowTip, LowTipChar);
+			setFieldText (LowTipField, "");
+			handled = true;
+			break;}
+		case HighTipField:
+			{StrCopy(Prefs.HighTip, HighTipChar);
+			setFieldText (HighTipField, "");
+			handled = true;
+			break;}
+
+			break;}
+
+
+		// *** ADD EVENT HANDLING HERE *** //
+//BUTTONS
+	case ctlSelectEvent:
+		switch(event->data.ctlSelect.controlID)
+			{
+		case	ClosePrefBtn:
+			{	FrmGotoForm(MainForm);
+				getFieldText(CurrField, CurrChar);
+				StrCopy(Prefs.Curr, CurrChar);
+				
+				getFieldText(LowTipField, LowTipChar);				
+				if(StrCompare(LowTipChar, "")==0)
+				{StrCopy(LowTipChar, Prefs.LowTip);}	
+				else
+				{StrCopy(Prefs.LowTip, StrDelocalizeNumber(LowTipChar,  thSep,decSep ));}
+				
+				
+
+				getFieldText(HighTipField, HighTipChar);
+				if(StrCompare(HighTipChar, "")==0)
+				{StrCopy(HighTipChar, Prefs.HighTip);}	
+				else
+				{StrCopy(Prefs.HighTip, StrDelocalizeNumber(HighTipChar,  thSep,decSep ));}
+
+				StrCopy(LowTipChar2, LowTipChar);
+				StrCat(LowTipChar2, "%");
+				StrCopy(HighTipChar2, HighTipChar);
+				StrCat(HighTipChar2, "%");
+				
+				handled = true;
+				break;
+			}
+			//other buttons...
+			case ResetPrefBtn:
+			{
+				setFieldText(LowTipField, "5,5");
+				setFieldText(HighTipField, "19,6");
+				//setFieldText(TaxField, "10");
+				handled = true;
+				break;
+
+			}		
+	}
+			break;
+			
+
+		case popSelectEvent:
+			{a=0;
+			int	i	= event->data.popSelect.selection;
+
+			switch (event->data.popSelect.controlID)
+			{
+			case CurrencyPopUp:
+			{setFieldText(CurrField, listCurr[i]);
+			handled = true;
+			break;}
+						
+			case LowTipPopUp:
+			{setFieldText(LowTipField, listPercM[i]);
+			handled = true;
+			break;}
+									
+			case HighTipPopUp:
+			{setFieldText(HighTipField, listPercM[i]);
+			handled = true;
+			break;}
+			}
+			}
+
+			break;
+}
+return handled;
+}
+
+//*************************************************************************
+//  Routines necessary for MathLib
+//**************************************************************************
+
+/*
+void initMath() {
+Err err;
+err = SysLibFind("MathLib", &MathLibRef);
+if (err != 0) { // library not loaded already
+    err = SysLibLoad('libr', 'MthL', &MathLibRef);
+    if (err == 0)
+        err = MathLibOpen (MathLibRef, 1);
+    }
+}
+void termMath() {
+if (MathLibRef != -1) {
+    Err err;
+    UInt usecount;
+    err = MathLibClose (MathLibRef, &usecount);
+    if (usecount == 0)
+        SysLibRemove (MathLibRef);
+    }
+}
+
+*/
+//*************************************************************************
+static Boolean	doMenu(FormPtr frmP, Word command)
+{
+	Boolean handled = false;
+	switch (command) {
+			case OptionsMenuAbout:
+			//getFieldText(TipField, TipChar2);
+			//StrCopy(Prefs.Tip, StrDelocalizeNumber(TipChar2,  thSep,decSep ));
+			CopyFields();
+			FrmGotoForm(AboutForm);
+			FormCheck=1;
+			handled = true;
+			break;
+		
+		case ManualMenuAbout:
+			//getFieldText(TipField, TipChar2);
+			//StrCopy(Prefs.Tip, StrDelocalizeNumber(TipChar2,  thSep,decSep ));
+			CopyFields();
+			FrmGotoForm(ManualForm);
+			FormCheck=1;
+			handled = true;
+			break;
+			
+		case PreferencesMenu:
+			CopyFields();
+			PB=1;
+			FrmGotoForm(PrefForm);
+			FormCheck=1;
+			handled = true;
+			break;
+		
+		case KeyboardMenu:
+			SysKeyboardDialog(kbdNumbersAndPunc);
+			handled = true;
+			break;
+			case GraffitiMenu:
+			SysGraffitiReferenceDialog(referenceDefault);
+			handled = true;
+			break;
+
+
+	}
+	return handled;
+}
+		
+	double conversion()
+			{	
+				getFieldText (TipField,TipChar2);
+				if(StrCompare(TipChar2, "")==0)
+				{setFieldText (TipField, Prefs.Tip);
+				StrCopy(TipChar2, Prefs.Tip);}
+				
+				FlpCompDouble TipFloat;
+				TipFloat.fd = FlpAToF(StrDelocalizeNumber(TipChar2,  thSep,decSep ));
+				TipFl = TipFloat.d;
+				g=TipFl;
+	
+			if(z==0)
+			
+				{getFieldText (AmountField,AmountChar);
+				FlpCompDouble AmountFloat;
+				AmountFloat.fd = FlpAToF(StrDelocalizeNumber(AmountChar,  thSep,decSep ));
+				AmountFl = AmountFloat.d;
+				b=AmountFl*(g/100);
+				c=AmountFl+b;
+				}
+				
+			if(z==1)
+				{
+				getFieldText (TotalField,TotalChar);
+				FlpCompDouble TotalFloat;
+				TotalFloat.fd = FlpAToF(StrDelocalizeNumber(TotalChar,  thSep,decSep ));
+				TotalFl = TotalFloat.d;
+
+				b=(TotalFl)*((g/100)/(1+(g/100)));				
+				c=TotalFl-b;
+				
+				}
+
+	return b;
+	}	
+
+	void display()
+	{				
+			if(z==0)
+				{
+				
+				floatToStr(TipChar, b, 2);
+				floatToStr(TotalChar, c, 2);
+				//setFieldText (TotalTipField, TipChar);
+				//setFieldText (TotalField, TotalChar);
+				setFieldText (TotalTipField, StrLocalizeNumber(TipChar,  thSep,decSep ));
+				setFieldText (TotalField,StrLocalizeNumber(TotalChar,  thSep,decSep ));
+
+				
+				}
+
+				if(z==1)
+				{
+				
+				floatToStr(AmountChar, c, 2);
+				floatToStr(TipChar, b, 2);
+				
+				//setFieldText (TotalTipField, TipChar);
+				//setFieldText (AmountField, AmountChar);
+
+				setFieldText (TotalTipField, StrLocalizeNumber(TipChar,  thSep,decSep ));
+				setFieldText (AmountField,StrLocalizeNumber(AmountChar,  thSep,decSep ));
+
+				}
+	
+					}
+
+double TipConv(char test[50])
+			{	double pr, TpFl;
+				FlpCompDouble TipFloat;
+				TipFloat.fd = FlpAToF(StrDelocalizeNumber(test,  thSep,decSep ));
+				TipFl = TipFloat.d;
+				pr=TpFl;
+				return pr;
+			}
+
+static void CopyFields(void)
+{	
+	getFieldText(TipField, TipChar2);
+			StrCopy(Prefs.Tip, StrDelocalizeNumber(TipChar2,  thSep,decSep ));
+	
+	getFieldText (TotalField, TotalChar);
+	getFieldText (TotalTipField, TipChar);
+	
+	
+}
+
+static void MaxNumberCheck(void)
+{
+UInt16 alertSelection = FrmAlert(WarningAlert);
+				setFieldText (AmountField, "");
+				FrmSetFocus(FrmGetActiveForm(), FrmGetObjectIndex(FrmGetActiveForm(), AmountField));
+				//setFieldText (TotalTipField, " 0.00");
+				//setFieldText (TotalField, " 0.00");
+				ResetZeroField(0);
+
+}
+
+static void FillTipField(void)
+			{getFieldText (TipField,TipChar);
+			if (StrCompare(TipChar, "")==0)
+			{setFieldText (TipField, Prefs.Tip);}}
+
+static void ResetZeroField(int z)
+{
+	StrCopy(Zero, "0.00");
+	setFieldText (TotalTipField, StrLocalizeNumber(Zero,  thSep,decSep ));
+	if(z==0)
+	{setFieldText (TotalField, Zero);}
+	else
+	{setFieldText (AmountField, Zero);}
+}

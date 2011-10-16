@@ -1,0 +1,13 @@
+Version 2.0
+-----------
+
+#) Values are remembered upon exit (OK)
+#) changing focus on tip, margin and discount: value not remembered when another field is selected or another form is opened (OK)
+#) port conversion button from TipTap (OK)
+#) port preference panel (OK)
+#) the reset button should only clear the fields not the percentages (OK)
+#) add default percentages (NO)
+#) add currencies (OK)
+
+Version 1.3
+------------

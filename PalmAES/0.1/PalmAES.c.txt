@@ -1,0 +1,740 @@
+#ifdef _GNUC__
+#include <PalmOS.h>    // for PRC Tool compatability
+#endif
+
+
+#define MainForm		1000
+#define AboutForm 1100
+//#define SIForm 1200
+#define LicenseForm	1150
+	#define CopyMenu 1900
+	#define OptionsMenuAbout 2000
+	#define ConstMenu 1250
+	
+	//#define SIMenu 1050
+	//#define MSElementField 2099
+	//#define Mass1Field 2100
+	//#define Mass2SIField 2200
+	//#define Mass3DerField 2300
+	//#define Mass4Field 2400
+	//#define Mass5SIField 2500
+	//#define Mass6DerField 2600
+	
+	#define ElementField 3000
+	#define InfoField 3001
+	#define EnBeamField 3010
+	#define EnergyField 3100
+	#define EnergyField2 3101
+	
+	#define ElementList 3005
+	#define ElementPopup 3006
+	#define EnBeamList 3015
+	#define EnBeamPopup 3016
+	//#define SIPopup 2006
+	
+	
+	#define SIList 2005
+	
+	#define CopyBtn 2500
+	
+	#define CloseAboutMenuBtn 1110
+	#define LicenseBtn 1112
+	#define CloseLicenseBtn 1160
+	#define LicenseField 1170
+	//#define SIBtn 1251
+	//#define ConstBtn 1051
+	#define LCountM 81
+	#define LCount2 2
+	
+	// *** PUT UI-DEFINITIONS HERE *** //
+	
+	// Prototypes
+	int d,g;
+	static char StringCopy[80];
+		static Boolean	appHandleEvent (EventPtr event);
+	static void	mainFormInit (FormPtr form);
+	static void	AboutFormInit (FormPtr form);
+	static void	LicenseFormInit (FormPtr form);
+	//static void	SIFormInit (FormPtr form);
+	static Boolean	mainFormEventHandler (EventPtr event);
+	static Boolean	AboutFormEventHandler (EventPtr event);
+	static Boolean	LicenseFormEventHandler (EventPtr event);
+	//static Boolean	SIFormEventHandler (EventPtr event);
+	static Boolean	doMenu(FormPtr frmP, UInt16 command);
+	//static Boolean	doMenuSI(FormPtr frmP, UInt16 command);
+	void	*getObjectPtr (FormPtr frmP, Int16 resourceNo);
+	static void getFieldText (UInt32 fIndex, char *StrToGet);
+	static void setFieldText (UInt32 fIndex, char *StrToShow);
+	static void	nullField (UInt32 fIndex);
+	
+
+	//list handling prototypes
+	void LstDrawList (ListType *listP) SYS_TRAP(sysTrapLstDrawList);
+	void LstSetDrawFunction (ListType *listP, ListDrawDataFuncPtr func) 
+		SYS_TRAP(sysTrapLstSetDrawFunction);
+	void WinDrawTruncChars (Char *c, int i, int x, int y, int w)
+		SYS_TRAP(sysTrapWinDrawTruncChars);
+	
+	
+	
+
+
+	static char	*Blanklist[1]= {" "};
+	static char blank[30] ="   ";
+	static char	*ListElement[LCountM]= {
+"Lithium - Li", "Beryllium - Be", "Boron - B","Carbon - C","Nitrogen - N", "Oxygen - O","Fluorine - F",
+"Sodium - Na", "Magnesium - Mg", "Aluminum - Al", "Silicon - Si", "Phosphorus - P", "Sulfur - S", "Chlorine - Cl", "Argon - Ar",
+"Potassium - K","Calcium - Ca", "Scandium - Sc", "Titanium - Ti", "Vanadium - Va", "Chromium - Cr", "Manganese - Mn", "Iron -Fe",
+	"Cobalt - Co", "Nickel - Ni", "Copper Cu", "Zinc - Zn", "Gallium - Ga", "Germaium - Ge", "Arsenic - As", "Selenium - Se", "Bromine - Br", 
+"Rubidium - Ru", "Strontium - Sr", "Yttrium - Y", "Zirconium - Zr", "Niobium Nb","Molybdenum -Mo", "Technetium - Tc", "Ruthenium - Ru", 
+	"Rhodium - Rh", "Palladium - Pd", "Silver - Ag", "Cadmium - Cd","Indium - In", "Tin - Sn", "Antimony - Sb", "Tellurium - Te", "Iodine - I", "Xenon - Xe",
+"Cesium - Cs","Barium - Ba", "Lanthanum - La","Cerium - Cr","Praseodymium - Pr", "Neodymium - Nd","Promethium - Pm","Samarium - Sm",
+		"Europium - Eu","Gadolinium - Gd","Terbium - Tb","Dysprosium - Dy","Holmium - Ho","Erbium - Er","Thulium - Tm", "Ytterbium - Yb", "Lutetium - Lu",
+"Hafnium - Hf","Tantalum - Ta","Tungsten - W","Rhenium - Re","Osmium - Os","Iridium - Ir","Platinum - Pt", "Gold - Au","Mercury - Hg","Thallium - Tl",
+"Lead - Pb","Bismuth - Bi","Thorium - Th", "Uranium - U"   };
+
+					
+				static char	*ListEB[LCount2]= {"Ep = 3 keV", "Ep = 5 keV"};
+				static char	*ListIn[LCount2]={" "," "};
+				static char *ListCuE[LCount2]={"M272", "M272"};
+				static char	*ListMgEB[LCount2]= {"Ep = 3 keV", "Ep = 5 keV - MgO"};
+				static char	*ListMgIn[LCount2]={" ","MgO"};
+				static char *ListMgE[LCount2]={"1085,1086,1106,1118,1129,1140", "32, 1095, 1128, 1174"};
+				static char *ListMgE2[LCount2]={"1153,1164,1175, M1186,1253 ", " "};
+
+
+void	drawBlanklist	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (Blanklist[i], StrLen(Blanklist[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupBlanklist(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, 1);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawBlanklist);
+
+		// Don't redraw the list
+	}
+
+
+void	drawListElement	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (ListElement[i], StrLen(ListElement[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListElement(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, LCountM);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawListElement);
+
+		// Don't redraw the list
+	}
+void	drawListEB	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (ListEB[i], StrLen(ListEB[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListEB(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, LCount2);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawListEB);
+
+		// Don't redraw the list
+	}
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+	/*
+	 * startApp and stopApp are here for future reference.  They clearly 
+	 * don't do anything for this program, but it's a good idea to do 
+	 * program clean-up and shutdown in these files.  One thing that 
+	 * typically goes here is database opening and closing.
+	 */
+
+	static void	startApp()	{return;}
+	static void	stopApp()	{return;}
+
+	/*
+	 * A Palm program starts at the PilotMain function -- you can use 
+	 * this example verbatim for most (maybe all) your Palm applications.  
+	 * Some other examples might separate the event loop into a separate 
+	 * function but we've combined the two, here.  This function does 
+	 * the following.
+	 *
+	 *	o  calls startApp, 
+	 *	o  initiates the first form, 
+	 *	o  handles the event loop, 
+	 *	o  cleans-up (when it gets the 'leaving now' event), and 
+	 *	o  leaves.
+	 */
+
+
+		UInt16
+	PilotMain(UInt16 cmd, void *cmdPBP, UInt16 launchFlags)
+	{
+		EventType	event;
+		Int16		error;
+		if (cmd == sysAppLaunchCmdNormalLaunch) 
+		{
+			startApp();
+
+			/*
+			 * FrmGotForm generates a frmLoadEvent that'll get 
+			 * handled as soon as we have an event handler that 
+			 * knows what to do with it.
+			 */
+
+			FrmGotoForm(MainForm);
+
+			/*
+			 * This loop gets events, handles the events, and 
+			 * checks to see if we've got a 'done' event.
+			 */
+
+			do 
+			{
+				/*
+				 * Wait for an event (we already generated the 
+				 * first one).
+				 */
+
+				EvtGetEvent(&event, evtWaitForever);
+
+				/*
+				 * Then, ask the system, the menu system, 
+				 * and our *OWN* event handlers (one for the 
+				 * application as a whole and one for the 
+				 * current form) to deal with the event.
+				 */
+
+				if (!SysHandleEvent (&event))
+				if (!MenuHandleEvent (0, &event, &error))
+				if (!appHandleEvent (&event))
+					FrmDispatchEvent (&event);
+
+			} while (event.eType != appStopEvent);
+
+			/*
+			 * When we're done, shut down
+			 */
+
+			stopApp();
+			FrmCloseAllForms();
+		}
+		return 0;
+	}
+
+	/*
+	 * This is the top-level event handler for the entire application.  
+	 * Here, we handle form load events and our menu events.
+	 */
+
+
+		static Boolean 
+	appHandleEvent (EventPtr event) 
+	{
+		FormPtr	frm;
+		Int16	formId;
+		Boolean	handled = false;
+		
+		if (event->eType == frmLoadEvent) 
+		{
+			/*
+			* Load the resource for the form
+			*/
+
+			formId	= event->data.frmLoad.formID;
+			frm	= FrmInitForm(formId);
+
+			FrmSetActiveForm(frm);
+
+			/*
+			* install a form-specific event handler
+			*/
+
+			if (formId == MainForm)
+				FrmSetEventHandler (frm, mainFormEventHandler);
+			if (formId == AboutForm)
+				FrmSetEventHandler (frm, AboutFormEventHandler);
+			if (formId == LicenseForm)
+				FrmSetEventHandler (frm, LicenseFormEventHandler);
+			//if (formId == SIForm)
+			//	FrmSetEventHandler (frm, SIFormEventHandler);
+
+			// *** ADD NEW FORM HANDLING HERE *** //
+			
+
+
+			handled = true;
+		}       
+		return handled;
+	}
+
+
+	/*
+	 * This is the event handler for the main form.  It handles all of 
+	 * the user interactions with the user interface objects (e.g., 
+	 * buttons, lists, text fields, and such) on the main form.
+	 */
+
+
+		static Boolean
+	mainFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			mainFormInit(frmP);
+			handled = true;
+			break;  
+		case menuEvent:
+			handled=doMenu(frmP, event->data.menu.itemID);
+			break;
+
+		
+		// *** ADD EVENT HANDLING HERE *** //
+//BUTTONS
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	CopyBtn:
+			{
+				//Copy to Clipboard
+				getFieldText(EnergyField, StringCopy);
+				ClipboardAddItem (clipboardText, StringCopy,StrLen(StringCopy));
+
+				handled = true;
+				break;
+			}
+			//other buttons...
+			/*
+			case	SIBtn:
+			{	FrmGotoForm(SIForm);
+				handled = true;
+				break;
+			}
+			*/
+			}
+			break;
+
+//LISTS
+
+		case popSelectEvent:
+	{
+		int	i	= event->data.popSelect.selection;
+
+		switch (event->data.popSelect.controlID)
+		{
+		case ElementPopup:
+						
+			setFieldText(ElementField, ListElement[i]);
+			setFieldText(EnergyField, " ");
+			setFieldText(InfoField, " ");
+			setFieldText(EnBeamField, " ");
+
+			if(i==0)
+			{setupBlanklist(EnBeamList);
+			setFieldText(EnBeamField, "Ep = 3 keV");
+			setFieldText(InfoField, "LiF");
+			setFieldText(EnergyField, "43, 24, 58");
+			d=0;}	
+			if(i==1)
+			{setupBlanklist(EnBeamList);
+			setFieldText(EnBeamField, "Ep = 3 keV");
+			setFieldText(InfoField, "");
+			setFieldText(EnergyField, "M104");
+			d=1;}
+			if(i==2)
+			{setupBlanklist(EnBeamList);
+			setFieldText(EnBeamField, "Ep = 3 keV");
+			setFieldText(InfoField, "");
+			setFieldText(EnergyField, "M179");
+			d=2;}
+			if(i==3)
+			{setupListEB(EnBeamList);
+			d=3;}
+			if(i==4)
+			{setupBlanklist(EnBeamList);
+			setFieldText(EnBeamField, "Ep = 3 keV");
+			setFieldText(InfoField, "Si 0.54 - N 0.46");
+			setFieldText(EnergyField, "348, 360, M379");
+			d=4;}
+			if(i==5)
+			{setupBlanklist(EnBeamList);
+			setFieldText(EnBeamField, "Ep = 3 keV");
+			setFieldText(InfoField, "MgO");
+			setFieldText(EnergyField, "468, 483, M503");
+			d=5;}
+			if(i==6)
+			{setupBlanklist(EnBeamList);
+			setFieldText(EnBeamField, "Ep = 3 keV");
+			setFieldText(InfoField, "LiF");
+			setFieldText(EnergyField, "600, 621, M647");
+			d=6;}
+			if(i==7)
+			{setupBlanklist(EnBeamList);
+			setFieldText(EnBeamField, "Ep = 3 keV");
+			setFieldText(InfoField, "WO3 - Na0.7");
+			setFieldText(EnergyField, "923, 951, 963, M990");
+			d=7;}
+			if(i==8)
+			{setupListEB(EnBeamList);
+			d=8;}
+
+
+			
+			handled = true;
+			break;
+		
+	case EnBeamPopup:
+			if(d==3)
+			{	 
+			setFieldText(EnBeamField, ListEB[i]);
+			setFieldText(InfoField, ListIn[i]);
+			setFieldText(EnergyField, ListCuE[i]);
+			}
+			if(d==8)
+			{	 
+			setFieldText(EnBeamField, ListMgEB[i]);
+			setFieldText(InfoField, ListMgIn[i]);
+			setFieldText(EnergyField, ListMgE[i]);
+			setFieldText(EnergyField2, ListMgE2[i]);
+
+			}
+
+			handled = true;
+			break;
+		}
+		}
+		}
+		
+		return handled;
+	}
+
+
+static Boolean
+	AboutFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			AboutFormInit(frmP);
+			handled = true;
+			break;  
+		
+		
+		// *** ADD EVENT HANDLING HERE *** //
+//BUTTONS
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	CloseAboutMenuBtn:
+			{	if(g==0)
+				{FrmGotoForm(MainForm);}
+				/*if(g==1)
+				{FrmGotoForm(SIForm);}
+				*/
+				handled = true;
+				break;
+			}
+			case	LicenseBtn:
+			{	FrmGotoForm(LicenseForm);
+				handled = true;
+				break;
+			}
+			//other buttons...
+			}
+			break;
+}
+return handled;
+}
+
+static Boolean
+	LicenseFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			LicenseFormInit(frmP);
+			handled = true;
+			break;  
+		
+		
+		// *** ADD EVENT HANDLING HERE *** //
+//BUTTONS
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	CloseLicenseBtn:
+			{	FrmGotoForm(AboutForm);
+				handled = true;
+				break;
+			}
+			//other buttons...
+			}
+			break;
+}
+return handled;
+}
+
+/*		
+static Boolean
+	SIFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			SIFormInit(frmP);
+			handled = true;
+			break;  
+		case menuEvent:
+			handled=doMenuSI(frmP, event->data.menu.itemID);
+			break;
+
+		
+		// *** ADD EVENT HANDLING HERE *** //
+//BUTTONS
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	ConstBtn:
+			{	FrmGotoForm(MainForm);
+				handled = true;
+				break;
+			}
+			//other buttons...
+			}
+			break;
+//LIST
+
+case popSelectEvent:
+	{
+		int	i	= event->data.popSelect.selection;
+
+		switch (event->data.popSelect.controlID)
+		{
+		case SIPopup:
+			{			
+			setFieldText(QuantityField, listSIQuantity[i]);
+			setFieldText(NameSIField, listSIName[i]);
+			setFieldText(SymbolSIField, listSISymbol[i]);
+			setFieldText(SymbolDerField, " ");
+
+	
+			handled = true;
+				break;
+			}
+		case DerPopup:
+			{			
+			setFieldText(QuantityField, listDerQuantity[i]);
+			setFieldText(NameSIField, listDerName[i]);
+			setFieldText(SymbolSIField, listDerSymbol[i]);
+			setFieldText(SymbolDerField, listDerUnits[i]);
+			setFieldText(SymbolDerInfo, listDerInfo[i]);
+			
+
+	
+				handled = true;
+				break;
+			}
+			
+		
+}
+}
+}
+return handled;
+}
+
+	*/
+
+	/*
+	 * This is the startup code for the form.  Here, we write our message 
+	 * to the screen.
+	 */
+
+		static void 
+	mainFormInit (FormPtr frmP)
+	{g=0;
+	setupListElement(ElementList);
+	
+	setFieldText(EnergyField, " ");
+		
+		// *** ADD FORM INITIALIZATION HERE *** //
+		
+	}
+
+
+	static void 
+	AboutFormInit (FormPtr frmP)
+	{//setupListM(ConstantList);
+	
+	//setFieldText(ConstValueField, " ");
+		
+		// *** ADD FORM INITIALIZATION HERE *** //
+		
+	}
+
+static void 
+	LicenseFormInit (FormPtr frmP)
+	{
+MemHandle t=DmGetResource('tSTR', 2000);
+
+
+    static Char    *foo    = (static Char *) MemHandleLock(t);
+   // WinDrawChars (foo,StrLen(foo),20,18);
+setFieldText(LicenseField, foo);
+
+    //MemHandleUnlock (t);
+    DmReleaseResource(t);
+				
+		
+	}
+
+/*
+static void 
+	SIFormInit (FormPtr frmP)
+	{	g=1;
+		setupListSIQuantity(SIList);
+		setupListDerQuantity(DerList);
+	//setFieldText(ConstValueField, " ");
+		
+		// *** ADD FORM INITIALIZATION HERE *** //
+		
+	}
+
+*/
+static Boolean	doMenu(FormPtr frmP, UInt16 command)
+{
+	Boolean handled = false;
+	switch (command) {
+		case OptionsMenuAbout:
+			FrmGotoForm(AboutForm);
+			handled = true;
+			break;
+		case CopyMenu:
+			getFieldText(EnergyField, StringCopy);
+			ClipboardAddItem (clipboardText, StringCopy,StrLen(StringCopy));
+			handled = true;
+			break;
+		//case ConstMenu:
+			//FrmGotoForm(SIForm);
+			handled = true;
+			break;
+
+	}
+	return handled;
+}
+/*
+static Boolean	doMenuSI(FormPtr frmP, UInt16 command)
+{
+	Boolean handled = false;
+	switch (command) {
+		case OptionsMenuAbout:
+			FrmGotoForm(AboutForm);
+			handled = true;
+			break;
+		case SIMenu:
+			FrmGotoForm(MainForm);
+			handled = true;
+			break;
+	}
+	return handled;
+}
+
+*/
+void	*
+	getObjectPtr (FormPtr frmP, Int16 resourceNo)
+	{
+		UInt16 objIndex=FrmGetObjectIndex(frmP,resourceNo);
+		return FrmGetObjectPtr(frmP,objIndex);
+	}
+
+static void 
+	setFieldText	(UInt32	fIndex, 
+			 char	*StrToShow)
+	{
+		FormPtr frmP	= FrmGetActiveForm();
+		void	*fieldP = getObjectPtr (frmP, fIndex);
+
+		// get the field's old text handle
+		MemHandle	oldH	= FldGetTextHandle(fieldP);
+		
+		//Copy our string into a memhandle
+
+		int	len	= StrLen(StrToShow);
+		MemHandle	mH	= MemHandleNew(len+1);
+		char	*mP	= MemHandleLock(mH);
+
+		StrCopy(mP, StrToShow);
+		
+		//The memhandle needs to be unlocked to work...
+		MemHandleUnlock(mH);
+
+		//To establish the field's link to the handle
+		FldSetTextHandle(fieldP,mH);
+
+		//To draw the field
+		FldDrawField(fieldP);
+		
+		// get rid of old handle
+		if (oldH != NULL)
+			MemHandleFree (oldH);
+	}
+
+// Use a function like this to find out what the field's contents 
+	// are and to put them into a string:
+
+		static void 
+	getFieldText (UInt32 fIndex, char *StrToGet)
+	{
+		FormPtr	frmP = FrmGetActiveForm();
+		void	*fieldP = getObjectPtr (frmP, fIndex);
+
+		MemHandle mH = FldGetTextHandle(fieldP);
+		char *mP=MemHandleLock(mH);
+		StrCopy(StrToGet, mP);
+		
+		MemHandleUnlock(mH);
+	}
+
+

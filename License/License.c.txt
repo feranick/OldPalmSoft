@@ -1,0 +1,185 @@
+#ifdef __GNUC__
+#    include <PalmOS.h>    // for PRC Tool compatability
+#endif
+#define MainForm        1000
+#define Field   1100
+#define CloseBtn 1200
+
+// *** PUT UI-DEFINITIONS HERE *** //
+// Prototypes
+static Boolean appHandleEvent (EventPtr pEvent);
+static void    mainFormInit (FormPtr pForm);
+static Boolean mainFormEventHandler (EventPtr pEvent);
+static Boolean doMainMenu (FormPtr pForm, UInt16 command);
+void	*getObjectPtr (FormPtr frmP, Int16 resourceNo);
+	static void getFieldText (UInt32 fIndex, char *StrToGet);
+	static void setFieldText (UInt32 fIndex, char *StrToShow);
+	static void	nullField (UInt32 fIndex);
+// Code
+static void startApp() {return;}
+static void stopApp()  {return;}
+
+    UInt32
+PilotMain
+   (UInt16  cmd,
+    void    *cmdPBP,
+    UInt16  launchFlags)
+{
+    EventType    event;
+    UInt16       error;
+    if (cmd == sysAppLaunchCmdNormalLaunch)
+    {
+        startApp();
+        FrmGotoForm(MainForm);
+        do
+        {
+            // Wait for an event
+            EvtGetEvent(&event, evtWaitForever);
+            // ask event handlers, in turn, to deal with the event.
+            if (!SysHandleEvent (&event))
+            if (!MenuHandleEvent (0, &event, &error))
+            if (!appHandleEvent (&event))
+                FrmDispatchEvent (&event);
+        } while (event.eType != appStopEvent);
+        stopApp();
+        FrmCloseAllForms();
+    }
+    return 0;
+}
+/*
+ * top-level event handler for the application.
+ */
+
+    static Boolean
+appHandleEvent (EventPtr pEvent)
+{
+    FormPtr pForm;
+    Int16   formId;
+    Boolean handled = false;
+    if (pEvent->eType == frmLoadEvent)
+    {
+        // Load the resource for the form
+        formId = pEvent->data.frmLoad.formID;
+        pForm  = FrmInitForm(formId);
+        FrmSetActiveForm(pForm);
+        // install a form-specific event handler
+        if (formId == MainForm)
+            FrmSetEventHandler (pForm, mainFormEventHandler);
+        // *** ADD NEW FORM HANDLING HERE *** //
+        handled = true;
+    }
+    else if (pEvent->eType == menuEvent)
+    {
+        handled = doMainMenu(pForm, pEvent->data.menu.itemID);
+    }
+    return handled;
+}
+
+/*
+ * Event handler for the main form.
+ */
+
+    static Boolean
+mainFormEventHandler(EventPtr pEvent)
+{
+    Boolean handled = false;
+    FormPtr pForm   = FrmGetActiveForm();
+    switch (pEvent->eType)
+    {
+    case frmOpenEvent:    // Form's 1st event
+        FrmDrawForm(pForm);
+        mainFormInit(pForm);
+        handled = true;
+        break;
+    // *** ADD EVENT HANDLING HERE *** //
+    default:
+        break;
+    }
+    return handled;
+}
+/*
+ * This is the menu handler for the main form.
+ */
+    static Boolean
+doMainMenu (FormPtr pForm, UInt16 command)
+{
+    Boolean    handled    = false;
+    switch(command)
+    {
+    // *** ADD MENU HANDLING HERE *** //
+    }
+    return handled;
+}
+/*
+ * Startup code for the form.
+ */
+    static void
+mainFormInit (FormPtr pForm)
+{MemHandle t=DmGetResource('tSTR', 2000);
+
+
+    static Char    *foo    = (static Char *) MemHandleLock(t);
+   // WinDrawChars (foo,StrLen(foo),20,18);
+setFieldText(Field, foo);
+
+    MemHandleUnlock (t);
+    DmReleaseResource(t);
+      // *** ADD FORM INITIALIZATION HERE *** //
+}
+    void    *
+getObjectPtr (FormPtr pForm, Int16 resourceNo)
+{
+    UInt16 objIndex=FrmGetObjectIndex(pForm,resourceNo);
+    return FrmGetObjectPtr(pForm,objIndex);
+}
+
+
+
+
+static void 
+	setFieldText	(UInt32	fIndex, 
+			 char	*StrToShow)
+	{
+		FormPtr frmP	= FrmGetActiveForm();
+		void	*fieldP = getObjectPtr (frmP, fIndex);
+
+		// get the field's old text handle
+		MemHandle	oldH	= FldGetTextHandle(fieldP);
+		
+		//Copy our string into a memhandle
+
+		int	len	= StrLen(StrToShow);
+		MemHandle	mH	= MemHandleNew(len+1);
+		char	*mP	= MemHandleLock(mH);
+
+		StrCopy(mP, StrToShow);
+		
+		//The memhandle needs to be unlocked to work...
+		MemHandleUnlock(mH);
+
+		//To establish the field's link to the handle
+		FldSetTextHandle(fieldP,mH);
+
+		//To draw the field
+		FldDrawField(fieldP);
+		
+		// get rid of old handle
+		if (oldH != NULL)
+			MemHandleFree (oldH);
+	}
+
+// Use a function like this to find out what the field's contents 
+	// are and to put them into a string:
+
+		static void 
+	getFieldText (UInt32 fIndex, char *StrToGet)
+	{
+		FormPtr	frmP = FrmGetActiveForm();
+		void	*fieldP = getObjectPtr (frmP, fIndex);
+
+		MemHandle mH = FldGetTextHandle(fieldP);
+		char *mP=MemHandleLock(mH);
+		StrCopy(StrToGet, mP);
+		
+		MemHandleUnlock(mH);
+	}

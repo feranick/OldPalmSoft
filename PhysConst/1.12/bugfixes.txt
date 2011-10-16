@@ -1,0 +1,11 @@
+Current release: PhysConst 1.11 - 11/21/2005
+
+Bugfixes since version 1.11
+---------------------------
+#) Fixed bug that caused a system crash while using FontSubst.
+
+Bugfixes since version 1.10
+---------------------------
+
+#) Added new units for the Magnetic Flux.
+#) call a constant. Reset it. Call a new form and go back. Not all fields are cleared.

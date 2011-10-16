@@ -1,0 +1,371 @@
+#include "OnBoardCompatabilityML.h"
+#include "MathLib.c"
+	#define MainForm		1000
+	#define Field1 1010
+	#define Field2 1020
+	#define Btn	1100
+	#define AboutAlert 2000
+	#define OptionsMenuAbout 2000
+	// *** PUT UI-DEFINITIONS HERE *** //
+	
+	// Prototypes
+	void initMath();
+	static Boolean	appHandleEvent (EventPtr event);
+	static void	mainFormInit (FormPtr form);
+	static Boolean	mainFormEventHandler (EventPtr event);
+	void termMath();
+	static void setFieldText (UInt32 fIndex, char *StrToShow);
+	void	*getObjectPtr (FormPtr frmP, Int resourceNo);
+	static Boolean	doMenu(FormPtr frmP, Word command);
+	static void getFieldText (UInt32 fIndex, char *StrToGet);
+	static void	nullField (UInt32 fIndex);
+	void doubleToStr(CharPtr str, float flpNumber, Int numFractDigits);
+
+	/*
+	 * startApp and stopApp are here for future reference.  They clearly 
+	 * don't do anything for this program, but it's a good idea to do 
+	 * program clean-up and shutdown in these files.  One thing that 
+	 * typically goes here is database opening and closing.
+	 */
+
+	static void	startApp()	{return;}
+	static void	stopApp()	{return;}
+
+	/*
+	 * A Palm program starts at the PilotMain function -- you can use 
+	 * this example verbatim for most (maybe all) your Palm applications.  
+	 * Some other examples might separate the event loop into a separate 
+	 * function but we've combined the two, here.  This function does 
+	 * the following.
+	 *
+	 *	o  calls startApp, 
+	 *	o  initiates the first form, 
+	 *	o  handles the event loop, 
+	 *	o  cleans-up (when it gets the 'leaving now' event), and 
+	 *	o  leaves.
+	 */
+
+
+		DWord
+	PilotMain(Word cmd, char *cmdPBP, Word launchFlags)
+	{
+		EventType	event;
+		Word		error;
+		if (cmd == sysAppLaunchCmdNormalLaunch) 
+		{
+			startApp();
+			initMath();
+			/*
+			 * FrmGotForm generates a frmLoadEvent that'll get 
+			 * handled as soon as we have an event handler that 
+			 * knows what to do with it.
+			 */
+
+			FrmGotoForm(MainForm);
+
+			/*
+			 * This loop gets events, handles the events, and 
+			 * checks to see if we've got a 'done' event.
+			 */
+
+			do 
+			{
+				/*
+				 * Wait for an event (we already generated the 
+				 * first one).
+				 */
+
+				EvtGetEvent(&event, evtWaitForever);
+
+				/*
+				 * Then, ask the system, the menu system, 
+				 * and our *OWN* event handlers (one for the 
+				 * application as a whole and one for the 
+				 * current form) to deal with the event.
+				 */
+
+				if (!SysHandleEvent (&event))
+				if (!MenuHandleEvent (0, &event, &error))
+				if (!appHandleEvent (&event))
+					FrmDispatchEvent (&event);
+
+			} while (event.eType != appStopEvent);
+
+			/*
+			 * When we're done, shut down
+			 */
+			termMath();	
+			stopApp();
+			FrmCloseAllForms();
+		}
+		return 0;
+	}
+
+	/*
+	 * This is the top-level event handler for the entire application.  
+	 * Here, we handle form load events and our menu events.
+	 */
+
+
+		static Boolean 
+	appHandleEvent (EventPtr event) 
+	{
+		FormPtr	frm;
+		Int	formId;
+		Boolean	handled = false;
+		
+		if (event->eType == frmLoadEvent) 
+		{
+			/*
+			* Load the resource for the form
+			*/
+
+			formId	= event->data.frmLoad.formID;
+			frm	= FrmInitForm(formId);
+
+			FrmSetActiveForm(frm);
+
+			/*
+			* install a form-specific event handler
+			*/
+
+			if (formId == MainForm)
+				FrmSetEventHandler (frm, mainFormEventHandler);
+
+			
+			// *** ADD NEW FORM HANDLING HERE *** //
+			
+
+			handled = true;
+		}       
+		return handled;
+	}
+
+
+	/*
+	 * This is the event handler for the main form.  It handles all of 
+	 * the user interactions with the user interface objects (e.g., 
+	 * buttons, lists, text fields, and such) on the main form.
+	 */
+
+
+		static Boolean
+	mainFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			mainFormInit(frmP);
+			handled = true;
+			break;  
+		case menuEvent:
+			handled=doMenu(frmP, event->data.menu.itemID);
+			break;
+
+		
+		// *** ADD EVENT HANDLING HERE *** //
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	Btn:
+			{
+				//add here
+				static char	bar[80];
+				FlpCompDouble theCompFloat;
+				float theFloat, a, b, c;
+				getFieldText (Field1, bar);
+												
+				theCompFloat.fd = FlpAToF(bar);
+				theFloat = theCompFloat.d;
+				
+				b=sin(theFloat);
+				//theCompFloat.d = b;
+				//
+FlpFToA(theCompFloat.fd, bar);
+			      doubleToStr(bar, theFloat, 3);
+
+
+				setFieldText (Field2, bar);
+				handled = true;
+				break;
+			}
+			//other buttons...
+			}
+
+
+		}
+		return handled;
+	}
+
+	/*
+	 * This is the startup code for the form.  Here, we write our message 
+	 * to the screen.
+	 */
+
+		static void 
+	mainFormInit (FormPtr frmP)
+	{
+		static char	foo[10]	= "Hello GUI";
+		
+		WinDrawChars (foo,StrLen(foo),20,18);
+
+		setFieldText (Field1, "1");
+
+		// *** ADD FORM INITIALIZATION HERE *** //
+		
+	}
+
+
+
+
+//*************************************************************************
+//  Routines necessary for MathLib
+//**************************************************************************
+
+
+void initMath() {
+Err err;
+err = SysLibFind("MathLib", &MathLibRef);
+if (err != 0) { // library not loaded already
+    err = SysLibLoad('libr', 'MthL', &MathLibRef);
+    if (err == 0)
+        err = MathLibOpen (MathLibRef, 1);
+    }
+}
+void termMath() {
+if (MathLibRef != -1) {
+    Err err;
+    UInt usecount;
+    err = MathLibClose (MathLibRef, &usecount);
+    if (usecount == 0)
+        SysLibRemove (MathLibRef);
+    }
+}
+
+
+//*************************************************************************
+static Boolean	doMenu(FormPtr frmP, Word command)
+{
+	Boolean handled = false;
+	switch (command) {
+			case OptionsMenuAbout:
+			FrmAlert(AboutAlert);
+			handled = true;
+			break;
+			
+	}
+	return handled;
+}
+
+
+
+
+
+// Defined Routines
+
+void	*
+	getObjectPtr (FormPtr frmP, Int resourceNo)
+	{
+		UInt16 objIndex=FrmGetObjectIndex(frmP,resourceNo);
+		return FrmGetObjectPtr(frmP,objIndex);
+	}
+
+
+// Use a function like this to set a field to a string
+
+		static void 
+	setFieldText	(UInt32	fIndex, 
+			 char	*StrToShow)
+	{
+		FormPtr frmP	= FrmGetActiveForm();
+		void	*fieldP = getObjectPtr (frmP, fIndex);
+
+		// get the field's old text handle
+		Handle	oldH	= FldGetTextHandle(fieldP);
+		
+		//Copy our string into a memhandle
+
+		int	len	= StrLen(StrToShow);
+		Handle	mH	= MemHandleNew(len+1);
+		char	*mP	= MemHandleLock(mH);
+
+		StrCopy(mP, StrToShow);
+		
+		//The memhandle needs to be unlocked to work...
+		MemHandleUnlock(mH);
+
+		//To establish the field's link to the handle
+		FldSetTextHandle(fieldP,mH);
+
+		//To draw the field
+		FldDrawField(fieldP);
+		
+		// get rid of old handle
+		if (oldH != NULL)
+			MemHandleFree (oldH);
+	}
+
+// Use a function like this to find out what the field's contents 
+	// are and to put them into a string:
+
+		static void 
+	getFieldText (UInt32 fIndex, char *StrToGet)
+	{
+		FormPtr	frmP = FrmGetActiveForm();
+		void	*fieldP = getObjectPtr (frmP, fIndex);
+
+		Handle mH = FldGetTextHandle(fieldP);
+		char *mP=MemHandleLock(mH);
+		StrCopy(StrToGet, mP);
+		
+		MemHandleUnlock(mH);
+	}
+
+//To pass from int from Scient. to normal notation
+
+void doubleToStr(CharPtr str, float flpNumber, Int numFractDigits)
+{ Long  longNumber;
+  float flpIP, zeros, round;
+  Int i, remainder, strLen;
+  Char sign = ' ';
+
+  if (numFractDigits < 0 || numFractDigits > 9)
+    //FrmAlert(ALERTID_ERROR);
+
+  if (flpNumber < 0.0)
+    { flpNumber = -flpNumber;
+      sign = '-';
+    }
+
+// With MathLib
+zeros = pow(10, numFractDigits);			// get the rounding constant
+
+
+  round = 0.5/zeros;
+
+// With Mathlib
+flpNumber = modf(flpNumber+round, &flpIP);		// get integer and fractional parts
+
+  str[0] = sign;
+  StrIToA(&str[1], (Long) flpIP);
+  strLen = StrLen(str);					// put in the decimal point and terminate the string
+  str[strLen] = '.';
+  str[numFractDigits+strLen+1] = '\0';
+
+  longNumber = flpNumber * zeros;			// fractional part
+
+  for (i=numFractDigits+strLen; i>strLen; i--)		// convert the integer part
+    { remainder = longNumber % 10;
+      str[i] = remainder + 0x30;
+      longNumber /= 10;
+    }
+}

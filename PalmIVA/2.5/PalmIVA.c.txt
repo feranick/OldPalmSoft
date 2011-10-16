@@ -1,0 +1,1190 @@
+#define appCreator 'Nick'
+#define appPrefID 1
+#define appPrefVersion 1
+#include "FloatLib.h"
+	#define MainForm		1000
+	#define AboutForm 1100
+	#define LicenseForm	1150
+	#define ManualForm	1250
+	#define WTaxField 1460
+	#define AmountField 1300
+	#define TipField 1450
+	#define IVAinField 1420
+	#define IVAricField 1430
+	#define TotalTipField 1400
+	#define TotalField 1350
+	#define TipPercList 1101
+	#define TipPerPopUp 1102
+	#define TaxPopUp 1802
+	#define TaxList 1801
+	#define ScPercList 1103
+	#define ScPerPopUp 1104
+	#define ScField 1105
+	#define ScontoField 1106
+	#define MarScField 1108
+	#define IVAScField 1107
+	#define RicField 1950
+	#define TotalRicField 1900
+	#define ConvBtn	1500
+	#define FourBtn 1600 
+	#define TwentyBtn 1700
+	#define TenBtn 1800
+	#define ResetBtn 1750
+	#define AboutAlert 2000
+	#define ManualMenuAbout 3000
+	#define WarningAlert 2210
+	#define Warning2Alert 2220
+	#define OptionsMenuAbout 2000
+	#define CloseAboutMenuBtn 1110
+	#define LicenseBtn 1112
+	#define LicenseCloseBtn 1160
+	#define LicenseField 1170
+	#define ManualCloseBtn 1260
+	#define ManualField 1270
+	#define listM 40
+	#define ivaPB 2100
+	#define ricPB 2200
+	#define listM2 28
+	#define KeyboardMenu 9999
+	#define GraffitiMenu 9998
+
+
+	typedef enum { 
+  		nfCommaPeriod, 
+ 		 nfPeriodComma, 
+ 		 nfSpaceComma, 
+ 		 nfApostrophePeriod, 
+ 		 nfApostropheComma 
+		} NumberFormatType;
+	
+	typedef enum 
+		{
+		kbdAlpha = 0, 
+		kbdNumbersAndPunc = 1, 
+		kbdAccent = 2,
+		kbdDefault = 0xff	
+		} KeyboardType;
+	
+	typedef enum 
+		{
+		referenceDefault = 0xff	
+		} ReferenceType;
+
+
+
+// Prototypes
+
+	int a,d, z, s, FormCheck;
+	static char	AmountChar[150];
+	static char localizedNum[150]; 
+
+	static char	      TipChar[150];
+	static char       TotalChar[150];
+	static char		RicChar[150];
+	static char		ScChar[150];
+	static char		IVAScChar[150];
+	static char		MarScChar[150];
+	static char		IVAricChar[150];
+	static char		IVAinChar[150];
+	//static char		TaxChar[150];
+	//static char		MargChar[150];
+	//static char		DiscChar[150];
+	static char		WTaxChar[150];
+
+	double AmountFl, AmountFl2, WTaxFl,TotalFl, TipFl, RicFl, ScFl;
+	double g,b1,b2,bt, b3,b4,b5,b6,b7,b8,h,c, sc ;	
+	double MaxNumber=2000000000.0;
+	double conversion();
+		void display();
+	
+
+//void initMath();  
+	
+NumberFormatType numFormat; 
+Char thousandsSeparator, decimalSeparator; 
+
+
+UInt32 PrefGetPreference(NumberFormatType prefNumberFormat)
+SYS_TRAP(sysTrapPrefGetPreference);
+void LocGetNumberSeparators (NumberFormatType prefnumberFormat, Char *thousandSeparator, Char *decimalSeparator)
+SYS_TRAP(sysTrapLocGetNumberSeparators);
+CharPtr StrDelocalizeNumber (CharPtr s, Char thousandSeparator, Char decimalSeparator)
+SYS_TRAP(sysTrapStrDelocalizeNumber);
+
+
+	static Boolean	appHandleEvent (EventPtr event);
+	static void	mainFormInit (FormPtr form);
+	static Boolean	mainFormEventHandler (EventPtr event);
+	static void	AboutFormInit (FormPtr form);
+	static Boolean	AboutFormEventHandler (EventPtr event);
+	static Boolean	LicenseFormEventHandler (EventPtr event);
+	static void	LicenseFormInit (FormPtr form);
+	static Boolean	ManualFormEventHandler (EventPtr event);
+	static void	ManualFormInit (FormPtr form);	
+	void LstDrawList (ListType *listP) SYS_TRAP(sysTrapLstDrawList);
+	void LstSetDrawFunction (ListType *listP, ListDrawDataFuncPtr func) 
+		SYS_TRAP(sysTrapLstSetDrawFunction);
+	void WinDrawTruncChars (Char *c, int i, int x, int y, int w)
+		SYS_TRAP(sysTrapWinDrawTruncChars);	
+	void SysKeyboardDialog (KeyboardType kbd)
+		SYS_TRAP(sysTrapSysKeyboardDialog);
+	void SysGraffitiReferenceDialog (ReferenceType referenceType)
+		SYS_TRAP(sysTrapSysGraffitiReferenceDialog);
+	
+	static void MaxNumberCheck(void);
+
+
+	//void termMath();
+	
+	typedef struct { 
+   	char Tax[150];
+	char Marg[150];
+	char Disc[150];
+	} PalmIVAPreferenceType; 
+	
+	PalmIVAPreferenceType Prefs; 
+	
+static char	*listPercM[listM]= {"0","1","2","3","4","5",
+						"6","7","8","9","10",
+						"11","12","13","14",
+						"15","16","17","18",
+						"19","20","21","22","23",
+						"24","25","30","35","40",
+						"45","50","55","60","65","70",
+						"75","80","85","90","95"};
+
+
+void	drawTipListM	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (listPercM[i], StrLen(listPercM[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListTipM(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, listM);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawTipListM);
+
+		// Don't redraw the list
+	}
+
+static char	*listTaxM[listM2]= {"0","1","2","3","4","5","5.5",
+						"6","7","8","9","10",
+						"11","12","13","14",
+						"15","16","17","18",
+						"19","19.6","20","21","22","23",
+						"24","25"};
+
+
+void	drawTaxListM	(Int16 i, RectangleType	*bounds, Char **items)
+	{
+WinDrawTruncChars (listTaxM[i], StrLen(listTaxM[i]), bounds->topLeft.x, bounds->topLeft.y, bounds->extent.x);
+	}
+
+	void	setupListTaxM(int lIndex)
+	{
+		FormPtr pForm	= FrmGetActiveForm();
+		void	*pList	= getObjectPtr(pForm, lIndex);
+		LstSetListChoices (pList, 0, listM2);
+		LstSetDrawFunction (pList, (ListDrawDataFuncPtr) drawTaxListM);
+
+		// Don't redraw the list
+	}
+	
+
+	/*
+	 * startApp and stopApp are here for future reference.  They clearly 
+	 * don't do anything for this program, but it's a good idea to do 
+	 * program clean-up and shutdown in these files.  One thing that 
+	 * typically goes here is database opening and closing.
+	 */
+
+	static void	startApp()	
+	{
+	UInt16 sizePrefs = sizeof( PalmIVAPreferenceType );
+	Int16 rc;	
+	rc=PrefGetAppPreferences(appCreator, appPrefID,(void*)(&Prefs), &sizePrefs, true);
+	//StrCopy(TaxChar, Prefs.Tax);
+	//StrCopy(MargChar, Prefs.Marg);
+	//StrCopy(DiscChar, Prefs.Disc);
+
+	if (rc == noPreferenceFound) 
+	{StrCopy( Prefs.Tax, "20");
+	StrCopy(Prefs.Marg, "30");
+	StrCopy(Prefs.Disc, "0");}
+			return;}
+
+	static void	stopApp()	
+	{if(FormCheck==1)
+	{FrmGotoForm(MainForm);
+	break;}
+		getFieldText(TipField, Prefs.Tax);
+		getFieldText(RicField, Prefs.Marg);
+		getFieldText(ScontoField, Prefs.Disc);
+
+	PrefSetAppPreferences (appCreator, appPrefID,  appPrefVersion, &Prefs, sizeof (Prefs), true); 
+		return;}
+
+	/*
+	 * A Palm program starts at the PilotMain function -- you can use 
+	 * this example verbatim for most (maybe all) your Palm applications.  
+	 * Some other examples might separate the event loop into a separate 
+	 * function but we've combined the two, here.  This function does 
+	 * the following.
+	 *
+	 *	o  calls startApp, 
+	 *	o  initiates the first form, 
+	 *	o  handles the event loop, 
+	 *	o  cleans-up (when it gets the 'leaving now' event), and 
+	 *	o  leaves.
+	 */
+
+
+		DWord
+	PilotMain(Word cmd, char *cmdPBP, Word launchFlags)
+	{
+		EventType	event;
+		Word		error;
+		if (cmd == sysAppLaunchCmdNormalLaunch) 
+		{
+			startApp();
+			//initMath();
+			/*
+			 * FrmGotForm generates a frmLoadEvent that'll get 
+			 * handled as soon as we have an event handler that 
+			 * knows what to do with it.
+			 */
+
+			FrmGotoForm(MainForm);
+
+LocGetNumberSeparators((NumberFormatType) PrefGetPreference(nfSpaceComma) , &thousandsSeparator, &decimalSeparator); 
+
+			/*
+			 * This loop gets events, handles the events, and 
+			 * checks to see if we've got a 'done' event.
+			 */
+
+			do 
+			{
+				/*
+				 * Wait for an event (we already generated the 
+				 * first one).
+				 */
+
+				EvtGetEvent(&event, evtWaitForever);
+
+				/*
+				 * Then, ask the system, the menu system, 
+				 * and our *OWN* event handlers (one for the 
+				 * application as a whole and one for the 
+				 * current form) to deal with the event.
+				 */
+
+				if (!SysHandleEvent (&event))
+				if (!MenuHandleEvent (0, &event, &error))
+				if (!appHandleEvent (&event))
+					FrmDispatchEvent (&event);
+
+			} while (event.eType != appStopEvent);
+
+			/*
+			 * When we're done, shut down
+			 */
+			//termMath();	
+			stopApp();
+			FrmCloseAllForms();
+		}
+		return 0;
+	}
+
+	/*
+	 * This is the top-level event handler for the entire application.  
+	 * Here, we handle form load events and our menu events.
+	 */
+
+
+		static Boolean 
+	appHandleEvent (EventPtr event) 
+	{
+		FormPtr	frm;
+		Int	formId;
+		Boolean	handled = false;
+		
+		if (event->eType == frmLoadEvent) 
+		{
+			/*
+			* Load the resource for the form
+			*/
+
+			formId	= event->data.frmLoad.formID;
+			frm	= FrmInitForm(formId);
+
+			FrmSetActiveForm(frm);
+
+			/*
+			* install a form-specific event handler
+			*/
+
+			if (formId == MainForm)
+				FrmSetEventHandler (frm, mainFormEventHandler);
+			if (formId == AboutForm)
+				FrmSetEventHandler (frm, AboutFormEventHandler);			
+			if (formId == LicenseForm)
+				FrmSetEventHandler (frm, LicenseFormEventHandler);
+			if (formId == ManualForm)
+				FrmSetEventHandler (frm, ManualFormEventHandler);
+
+			// *** ADD NEW FORM HANDLING HERE *** //
+			
+
+			handled = true;
+		}       
+		return handled;
+	}
+
+
+	/*
+	 * This is the event handler for the main form.  It handles all of 
+	 * the user interactions with the user interface objects (e.g., 
+	 * buttons, lists, text fields, and such) on the main form.
+	 */
+
+
+		static Boolean
+	mainFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			mainFormInit(frmP);
+			handled = true;
+			break;  
+		case menuEvent:
+			handled=doMenu(frmP, event->data.menu.itemID);
+			break;
+		
+		case fldEnterEvent:
+                      	switch(event->data.fldEnter.fieldID)
+			{	
+			case AmountField:
+			{z=0;
+			setFieldText (AmountField, "");
+			FrmSetFocus(frmP, FrmGetObjectIndex(frmP, AmountField));
+			setFieldText (WTaxField, " 0,00");
+			setFieldText (TotalTipField, " 0,00");
+			setFieldText (TotalField, " 0,00");
+			setFieldText (TotalRicField, " 0,00");
+			setFieldText (IVAricField, " 0,00");
+			setFieldText (IVAinField, " 0,00");
+			//setFieldText (TotalField, " 0,00");
+			setFieldText (ScField, " 0,00");
+			setFieldText (MarScField, " 0,00");
+			setFieldText (IVAScField, " 0,00");
+			handled = true;
+			break;}
+
+			case TotalField:
+			{z=1;
+			setFieldText (WTaxField, " 0,00");
+			setFieldText (AmountField, " 0,00");
+			setFieldText (TotalTipField, " 0,00");
+			setFieldText (TotalRicField, " 0,00");
+			setFieldText (IVAricField, " 0,00");
+			setFieldText (IVAinField, " 0,00");
+			setFieldText (ScField, " 0,00");
+			setFieldText (MarScField, " 0,00");
+			setFieldText (IVAScField, " 0,00");
+			setFieldText (TotalField, "");
+			FrmSetFocus(frmP, FrmGetObjectIndex(frmP, TotalField));
+			handled = true;
+			break;}
+			
+			case WTaxField:
+			{z=2;
+			setFieldText (WTaxField, "");
+			FrmSetFocus(frmP, FrmGetObjectIndex(frmP, WTaxField));
+			setFieldText (AmountField, " 0,00");
+			setFieldText (TotalTipField, " 0,00");
+			setFieldText (TotalField, " 0,00");
+			setFieldText (TotalRicField, " 0,00");
+			setFieldText (IVAricField, " 0,00");
+			setFieldText (IVAinField, " 0,00");
+			//setFieldText (TotalField, " 0,00");
+			setFieldText (ScField, " 0,00");
+			setFieldText (MarScField, " 0,00");
+			setFieldText (IVAScField, " 0,00");
+			handled = true;
+			break;}
+
+			case TipField:
+			{setFieldText (TipField, "");
+			FrmSetFocus(frmP, FrmGetObjectIndex(frmP, TipField));
+			handled = true;
+			break;}
+			
+			case RicField:
+			{
+			setFieldText (RicField, "");
+			FrmSetFocus(frmP, FrmGetObjectIndex(frmP, RicField));
+			handled = true;
+			break;}
+			
+			case ScontoField:
+			{
+			setFieldText (ScontoField, "");
+			FrmSetFocus(frmP, FrmGetObjectIndex(frmP, ScontoField));
+			handled = true;
+			break;}
+
+
+			break;
+			}	
+		
+		// *** ADD EVENT HANDLING HERE *** //
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	ConvBtn:
+			{
+				//add here
+				
+												
+				conversion();
+				
+				if(c>MaxNumber)	
+				{
+				MaxNumberCheck();
+				handled = true;
+				break;
+				}
+				
+								
+				display();
+
+				handled = true;
+				break;
+			}
+			
+			
+				case ivaPB:
+			{
+				s=0;
+				conversion();
+				
+				if(c>MaxNumber)	
+				{MaxNumberCheck();
+
+
+				handled = true;
+				break;
+				}
+								
+				display();
+
+				handled = true;
+				break;
+			}
+
+				case ricPB:
+			{
+				s=1;
+				conversion();
+				
+				if(c>MaxNumber)	
+				{MaxNumberCheck();
+
+
+				handled = true;
+				break;
+				}
+								
+				display();
+
+				handled = true;
+				break;
+			}
+
+
+			case ResetBtn:
+			{
+		setFieldText (AmountField, "");
+		FrmSetFocus(frmP, FrmGetObjectIndex(frmP, AmountField));
+		setFieldText (TotalField, " 0,00");
+		setFieldText (TipField, Prefs.Tax);
+		setFieldText (RicField, "30");
+		setFieldText (ScontoField, "0");
+		setFieldText (TotalTipField, " 0,00");
+		setFieldText (TotalRicField, " 0,00");
+		setFieldText (IVAricField, " 0,00");
+		setFieldText (IVAinField, " 0,00");
+		setFieldText (TotalField, " 0,00");
+			setFieldText (ScField, " 0,00");
+			setFieldText (MarScField, " 0,00");
+			setFieldText (IVAScField, " 0,00");
+		setFieldText (WTaxField, " 0,00");
+
+		setupListTipM(TipPercList);
+		
+		h=30.0;
+		g=20.0;
+		sc=0.0;
+			}
+
+			}
+
+
+		break;
+
+//LISTS
+		case popSelectEvent:
+			{a=0;
+		int	i	= event->data.popSelect.selection;
+
+		switch (event->data.popSelect.controlID)
+		{
+		case TipPerPopUp:
+		{				
+			setFieldText(RicField, listPercM[i]);
+			
+							conversion();
+				
+				if(c>MaxNumber)	
+				{MaxNumberCheck();
+
+
+				handled = true;
+				break;
+				}
+				
+				display();
+				handled = true;
+				break;
+			}
+
+
+
+			case ScPerPopUp:
+			{			
+			setFieldText(ScontoField, listPercM[i]);
+			
+							conversion();
+				
+				if(c>MaxNumber)	
+				{MaxNumberCheck();
+
+
+				handled = true;
+				break;
+				}
+							
+				display();
+				handled = true;
+				break;
+			}
+
+
+			case TaxPopUp:
+			{			
+			setFieldText(TipField, listTaxM[i]);
+			
+						
+				conversion();
+				
+				if(c>MaxNumber)	
+				{MaxNumberCheck();
+
+
+				handled = true;
+				break;
+				}
+							
+				display();
+				handled = true;
+				break;
+			}
+
+
+
+
+
+	break;
+	}
+
+//other buttons...
+
+
+			}
+
+
+		}
+		return handled;
+	}
+
+	/*
+	 * This is the startup code for the form.  Here, we write our message 
+	 * to the screen.
+	 */
+
+		static void 
+	mainFormInit (FormPtr frmP)
+	{
+		setFieldText (AmountField, "");
+		FrmSetFocus(frmP, FrmGetObjectIndex(frmP, AmountField));
+		setFieldText (TotalField, " 0,00");
+		setFieldText (TipField, Prefs.Tax);
+		setFieldText (RicField, Prefs.Marg);
+		setFieldText (ScontoField, Prefs.Disc);
+		setFieldText (TotalTipField, " 0,00");
+		setFieldText (TotalRicField, " 0,00");
+		setFieldText (IVAricField, " 0,00");
+		setFieldText (IVAinField, " 0,00");
+		setFieldText (TotalField, " 0,00");
+			setFieldText (ScField, " 0,00");
+			setFieldText (MarScField, " 0,00");
+			setFieldText (IVAScField, " 0,00");
+		setFieldText (WTaxField, " 0,00");
+		
+		setupListTipM(TipPercList);
+		setupListTipM(ScPercList);
+		setupListTaxM(TaxList);
+
+		s=0;
+		z=0;
+		FormCheck=0;
+
+				FlpCompDouble TipFloat;
+				FlpCompDouble RicFloat;
+				FlpCompDouble ScontoFloat;
+   				
+				getFieldText (TipField,localizedNum);
+				TipFloat.fd = FlpAToF(StrDelocalizeNumber(localizedNum,  thousandsSeparator,decimalSeparator));  
+				TipFl = TipFloat.d;
+				g=TipFl;
+								
+				getFieldText (RicField,localizedNum);
+				RicFloat.fd = FlpAToF(StrDelocalizeNumber(localizedNum,  thousandsSeparator,decimalSeparator));  
+				RicFl = RicFloat.d;
+				h=RicFl;
+				
+				getFieldText (ScontoField,localizedNum);
+				ScontoFloat.fd = FlpAToF(StrDelocalizeNumber(localizedNum,  thousandsSeparator,decimalSeparator));  
+				ScFl = ScontoFloat.d;
+				sc=ScFl;
+		
+
+
+		// *** ADD FORM INITIALIZATION HERE *** //
+		
+	}
+
+
+static void 
+	AboutFormInit (FormPtr frmP)
+	{
+		
+		// *** ADD FORM INITIALIZATION HERE *** //
+		
+	}
+
+static void 
+	LicenseFormInit (FormPtr frmP)
+	{
+		
+		MemHandle t=DmGetResource('tSTR', 2000);
+
+
+    static Char    *foo    = (static Char *) MemHandleLock(t);
+   
+setFieldText(LicenseField, foo);
+
+    //MemHandleUnlock (t);
+    DmReleaseResource(t);
+		
+	}
+
+static void 
+	ManualFormInit (FormPtr frmP)
+	{
+		
+		MemHandle t=DmGetResource('tSTR', 2100);
+
+
+    static Char    *foo    = (static Char *) MemHandleLock(t);
+   
+setFieldText(ManualField, foo);
+
+    //MemHandleUnlock (t);
+    DmReleaseResource(t);
+		
+	}
+
+static Boolean
+	AboutFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			AboutFormInit(frmP);
+			handled = true;
+			break;  
+		
+		
+		// *** ADD EVENT HANDLING HERE *** //
+//BUTTONS
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	CloseAboutMenuBtn:
+			{	FrmGotoForm(MainForm);
+				handled = true;
+				break;
+			}
+			//other buttons...
+			case	LicenseBtn:
+			{	FrmGotoForm(LicenseForm);
+				handled = true;
+				break;
+			}
+			}
+			break;
+}
+return handled;
+}
+
+
+static Boolean
+	LicenseFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			LicenseFormInit(frmP);
+			handled = true;
+			break;  
+		
+		
+		// *** ADD EVENT HANDLING HERE *** //
+//BUTTONS
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	LicenseCloseBtn:
+			{	FrmGotoForm(AboutForm);
+				handled = true;
+				break;
+			}
+			//other buttons...
+			
+			}
+			break;
+}
+return handled;
+}
+
+
+static Boolean
+	ManualFormEventHandler(EventPtr event)
+	{
+		Boolean	handled	= false;
+		FormPtr	frmP	= FrmGetActiveForm();
+		switch (event->eType) 
+		{
+
+		/*
+		 * the first event received by a form's event handler is
+		 * the frmOpenEvent.  
+		 */
+
+		case frmOpenEvent:
+			FrmDrawForm(frmP);
+			ManualFormInit(frmP);
+			handled = true;
+			break;  
+		
+		
+		// *** ADD EVENT HANDLING HERE *** //
+//BUTTONS
+		case ctlSelectEvent:
+			switch(event->data.ctlSelect.controlID)
+			{
+			case	ManualCloseBtn:
+			{	FrmGotoForm(MainForm);
+				handled = true;
+				break;
+			}
+			//other buttons...
+			
+			}
+			break;
+}
+return handled;
+}
+
+//*************************************************************************
+//  Routines necessary for MathLib
+//**************************************************************************
+
+/*
+void initMath() {
+Err err;
+err = SysLibFind("MathLib", &MathLibRef);
+if (err != 0) { // library not loaded already
+    err = SysLibLoad('libr', 'MthL', &MathLibRef);
+    if (err == 0)
+        err = MathLibOpen (MathLibRef, 1);
+    }
+}
+void termMath() {
+if (MathLibRef != -1) {
+    Err err;
+    UInt usecount;
+    err = MathLibClose (MathLibRef, &usecount);
+    if (usecount == 0)
+        SysLibRemove (MathLibRef);
+    }
+}
+
+*/
+//*************************************************************************
+static Boolean	doMenu(FormPtr frmP, Word command)
+{
+	Boolean handled = false;
+	switch (command) {
+			case OptionsMenuAbout:
+				getFieldText(TipField, Prefs.Tax);
+				getFieldText(RicField, Prefs.Marg);
+				getFieldText(ScontoField, Prefs.Disc);
+			FrmGotoForm(AboutForm);
+			FormCheck=1;
+			handled = true;
+			break;
+
+			case ManualMenuAbout:
+				getFieldText(TipField, Prefs.Tax);
+				getFieldText(RicField, Prefs.Marg);
+				getFieldText(ScontoField, Prefs.Disc);
+			FrmGotoForm(ManualForm);
+			FormCheck=1;
+			handled = true;
+			break;
+
+			case KeyboardMenu:
+			SysKeyboardDialog(kbdNumbersAndPunc);
+			handled = true;
+			break;
+
+			case GraffitiMenu:
+			SysGraffitiReferenceDialog(referenceDefault);
+			handled = true;
+			break;
+
+}
+
+	return handled;
+}
+double conversion()
+			{	FlpCompDouble TipFloat;
+				FlpCompDouble RicFloat;
+				FlpCompDouble ScontoFloat;
+   				
+				getFieldText (TipField,localizedNum);
+				TipFloat.fd = FlpAToF(StrDelocalizeNumber(localizedNum,  thousandsSeparator,decimalSeparator));  
+				TipFl = TipFloat.d;
+				g=TipFl;
+								
+				getFieldText (RicField,localizedNum);
+				RicFloat.fd = FlpAToF(StrDelocalizeNumber(localizedNum,  thousandsSeparator,decimalSeparator));  
+				RicFl = RicFloat.d;
+				h=RicFl;
+				
+				getFieldText (ScontoField,localizedNum);
+				ScontoFloat.fd = FlpAToF(StrDelocalizeNumber(localizedNum,  thousandsSeparator,decimalSeparator));  
+				ScFl = ScontoFloat.d;
+				sc=ScFl;
+
+
+				if(z==0)
+			
+				{FlpCompDouble AmountFloat;
+						
+
+				getFieldText (AmountField,localizedNum);
+				AmountFloat.fd = FlpAToF(StrDelocalizeNumber(localizedNum,  thousandsSeparator,decimalSeparator));  
+				AmountFl = AmountFloat.d;
+							
+				
+				if(s==0)
+				{
+				b3=AmountFl/(1-h/100);
+				b2=b3-AmountFl;
+				//c=b3/(1-g/100);
+				c=b3*(1+g/100);
+				b1=c-b3;
+				b4=AmountFl*(g/100);
+				b5=b1-b4;
+				b6=c*(1-sc/100.0);
+				b8=b1*(1-sc/100.0);  //disc tax
+				bt=b6-b8;            //disc price - taxes
+				b7=bt-AmountFl;		//disc profit
+
+				/*b6=c*(1-sc/100);
+				bt=b6/(1+h/100);
+				b7=(bt)-AmountFl;
+				b8=bt*(g/100);*/
+												}
+				
+				if(s==1)
+				{
+				b2=AmountFl*(h/100);
+				b3=AmountFl+b2;
+				b1=b3*(g/100);
+				b4=AmountFl*(g/100);
+				b5=b1-b4;
+				c=AmountFl+b2+b1;
+				b6=c*(1-sc/100.0);
+				b8=b1*(1-sc/100.0);  //disc tax
+				bt=b6-b8;            //disc price - taxes
+				b7=bt-AmountFl;		//disc profit
+
+				/*b6=c*(1-sc/100);
+				bt=b6/(1+h/100);
+				b7=(bt)-AmountFl;
+				b8=bt*(g/100);*/
+				}
+				
+				}
+				
+				if(z==1)
+				{
+				FlpCompDouble TotalFloat;
+				getFieldText (TotalField,localizedNum);
+				
+				TotalFloat.fd = FlpAToF(StrDelocalizeNumber(localizedNum,
+						  thousandsSeparator,decimalSeparator));  
+
+				//TotalFloat.fd = FlpAToF(TotalChar);
+				TotalFl = TotalFloat.d;
+				
+				if(s==0)
+				{
+				//b1=TotalFl*g/100;
+				b1=TotalFl*(1-1/(1+g/100));
+				b2=(TotalFl-b1)*(h/100);
+				c=TotalFl-b1-b2;
+				b4=c*g/100;
+				b5=b1-b4;
+				b6=TotalFl*(1-sc/100);
+				b8=b1*(1-sc/100.0);  //disc tax
+				bt=b6-b8;            //disc price - taxes
+				b7=bt-c;		//disc profit
+				
+				/*b6=Total*(1-sc/100);
+				b8=b6*(1-1/(1+g/100.0));
+				b7= (b6-b8)*(h/100);*/
+				}
+				
+				if(s==1)
+				{
+
+				b3=TotalFl/(1+g/100);
+				b1=TotalFl-b3;
+				c=b3/(1+h/100);
+				b2=TotalFl-b1-c;				
+				b4=c*g/100;
+				b5=b1-b4;
+				b6=TotalFl*(1-sc/100);
+				b8=b1*(1-sc/100.0);  //disc tax
+				bt=b6-b8;            //disc price - taxes
+				b7=bt-c;		//disc profit
+				
+				/*b6=Total*(1-sc/100);
+				b8=b6*(1-1/(1+g/100.0));
+				b7= (b6-b8)*(h/100);*/
+	
+				}}
+		if(z==2)
+				{
+				FlpCompDouble WTaxFloat;
+				getFieldText (WTaxField,localizedNum);
+				
+				WTaxFloat.fd = FlpAToF(StrDelocalizeNumber(localizedNum,
+						  thousandsSeparator,decimalSeparator));  
+
+				//TotalFloat.fd = FlpAToF(TotalChar);
+				WTaxFl = WTaxFloat.d;
+
+
+		if(s==0)
+		{		AmountFl2 = WTaxFl/(1+g/100);
+				b3=AmountFl2/(1-h/100);
+				b2=b3-AmountFl2;
+				//c=b3/(1-g/100);
+				c=b3*(1+g/100);
+				b1=c-b3;
+				b4=AmountFl2*(g/100);
+				b5=b1-b4;
+				b6=c*(1-sc/100.0);
+				b8=b1*(1-sc/100.0);  //disc tax
+				bt=b6-b8;            //disc price - taxes
+				b7=bt-AmountFl2;		//disc profit
+
+				/*b6=c*(1-sc/100);
+				bt=b6/(1+h/100);
+				b7=(bt)-AmountFl;
+				b8=bt*(g/100);*/
+
+		}
+
+	if (s==1)
+		{		AmountFl2 = WTaxFl/(1+g/100);
+				b2=AmountFl2*(h/100);
+				b3=AmountFl2+b2;
+				b1=b3*(g/100);
+				b4=AmountFl2*(g/100);
+				b5=b1-b4;
+				c=AmountFl2+b2+b1;
+				b6=c*(1-sc/100.0);
+				b8=b1*(1-sc/100.0);  //disc tax
+				bt=b6-b8;            //disc price - taxes
+				b7=bt-AmountFl2;		//disc profit
+
+				/*b6=c*(1-sc/100);
+				bt=b6/(1+h/100);
+				b7=(bt)-AmountFl;
+				b8=bt*(g/100);*/
+
+	}
+}
+				
+												
+
+	return b1;
+	}	
+
+	void display()
+	{		if(b7<0)
+				{UInt16 alertSelection = FrmAlert(Warning2Alert);
+				setFieldText(ScontoField, "--");
+				setFieldText (ScField, "--");
+				setFieldText (MarScField, "--");
+				setFieldText (IVAScField, "--");
+				//sc=0.0;
+				break;}
+
+			if(z==0)
+				{ 
+				floatToStr(WTaxChar, AmountFl+b1, 2);
+				floatToStr(TipChar, b1, 2);
+				floatToStr(RicChar, b2, 2);
+				floatToStr(IVAricChar, b4, 2);
+				floatToStr(IVAinChar, b5, 2);
+				floatToStr(ScChar, b6, 2);
+				floatToStr(MarScChar, b7, 2);
+				floatToStr(IVAScChar, b8, 2);
+				floatToStr(TotalChar, c, 2);
+
+				setFieldText (WTaxField, WTaxChar);
+				setFieldText (TotalTipField, TipChar);
+				setFieldText (TotalRicField, RicChar);
+				setFieldText (IVAricField, IVAricChar);				
+				setFieldText (IVAinField, IVAinChar);
+				setFieldText (ScField, ScChar);
+				setFieldText (MarScField, MarScChar);
+				setFieldText (IVAScField, IVAScChar);
+				setFieldText (TotalField, TotalChar);
+				
+				}
+				if(z==1)
+				{
+				floatToStr(WTaxChar, c+b1, 2);
+				floatToStr(TipChar, b1, 2);
+				floatToStr(RicChar, b2, 2);
+				floatToStr(IVAricChar, b4, 2);
+				floatToStr(IVAinChar, b5, 2);
+				floatToStr(ScChar, b6, 2);
+				floatToStr(AmountChar, c, 2);
+				floatToStr(MarScChar, b7, 2);
+				floatToStr(IVAScChar, b8, 2);
+				
+				setFieldText (WTaxField, WTaxChar);
+				setFieldText (TotalTipField, TipChar);
+				setFieldText (TotalRicField, RicChar);
+				setFieldText (IVAricField, IVAricChar);
+				setFieldText (IVAinField, IVAinChar);
+				setFieldText (ScField, ScChar);
+				setFieldText (AmountField, AmountChar);
+				setFieldText (MarScField, MarScChar);
+				setFieldText (IVAScField, IVAScChar);
+				
+				}
+				if(z==2)
+				{
+				floatToStr(TotalChar, c, 2);
+				floatToStr(TipChar, b1, 2);
+				floatToStr(RicChar, b2, 2);
+				floatToStr(IVAricChar, b4, 2);
+				floatToStr(IVAinChar, b5, 2);
+				floatToStr(ScChar, b6, 2);
+				floatToStr(AmountChar, AmountFl2, 2);
+				floatToStr(MarScChar, b7, 2);
+				floatToStr(IVAScChar, b8, 2);
+				
+				setFieldText (TotalField, TotalChar);
+				setFieldText (TotalTipField, TipChar);
+				setFieldText (TotalRicField, RicChar);
+				setFieldText (IVAricField, IVAricChar);
+				setFieldText (IVAinField, IVAinChar);
+				setFieldText (ScField, ScChar);
+				setFieldText (AmountField, AmountChar);
+				setFieldText (MarScField, MarScChar);
+				setFieldText (IVAScField, IVAScChar);
+				
+				}
+
+}
+
+
+static void MaxNumberCheck(void)
+{
+UInt16 alertSelection = FrmAlert(WarningAlert);
+				setFieldText (AmountField, "");
+				FrmSetFocus(FrmGetActiveForm(), FrmGetObjectIndex(FrmGetActiveForm(), AmountField));
+				setFieldText (TotalTipField, " 0,00");
+				setFieldText (TotalField, " 0,00");
+				setFieldText (TotalRicField, " 0,00");
+				setFieldText (IVAricField, " 0,00");
+				setFieldText (IVAinField, " 0,00");
+				setFieldText (TotalField, " 0,00");
+				setFieldText (ScField, " 0,00");
+				setFieldText (MarScField, " 0,00");
+				setFieldText (IVAScField, " 0,00");
+				setFieldText (WTaxField, " 0,00");
+}

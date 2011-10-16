@@ -1,0 +1,6 @@
+Questo programma consente di calcolare il margine di guadagno in quattro modalita':
+sul prezzo finale di vendita, a partire dal prezzo iniziale all'ingrosso;
+sul prezzo iniziale all'ingrosso, a partire dal prezzo iniziale all'ingrosso;
+sul prezzo finale di vendita, a partire dal prezzo finale di vendita;
+sul prezzo iniziale all'ingrosso, a partire dal prezzo finale di vendita;
+ Il programma inoltre calcola l'IVA (con aliquote del 4%, 10%, 20%) sul prezzo all'ingrosso, l"IVA sul margine, e l'IVA totale. Il margine di guadagno puo' essere calcolato utilizzando a scelta percentuali variabili tra 1% e il 95%. A partire dalla versione 2.0, e' possibile applicare lo sconto al prezzo di vendita. 
